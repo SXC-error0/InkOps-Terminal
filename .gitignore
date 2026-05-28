@@ -1,0 +1,72 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+credentials/
+
+# Local user data / databases
+*.db
+*.sqlite
+*.sqlite3
+local-data/
+data/private/
+uploads/
+messages/
+
+# Generated e-ink pages and runtime output
+runtime/
+output/
+generated/
+display-history/
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node / React / Vite
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+apps/desktop/dist/
+apps/desktop/.vite/
+*.tsbuildinfo
+
+# Tauri / Rust
+apps/desktop/src-tauri/target/
+target/
+Cargo.lock.bak
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Arduino / firmware build outputs
+firmware/**/.pio/
+firmware/**/build/
+firmware/**/*.bin
+firmware/**/*.elf
+firmware/**/*.map
