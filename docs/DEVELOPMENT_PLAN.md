@@ -758,3 +758,346 @@ InkOps-Terminal/
 AI 负责从复杂信息里挑出值得关注的一页；电子墨水屏负责让这一页在现实空间里长期存在。
 
 > **Build. Ship. Display. Repeat.**
+
+---
+
+## 19. 数据库表结构（细化设计）
+
+### 19.1 设备管理
+
+```sql
+CREATE TABLE devices (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL DEFAULT 'NODE-01',
+    ip TEXT,
+    model TEXT DEFAULT '4.2inch-e-paper',
+    firmware_version TEXT,
+    last_seen TIMESTAMP,
+    status TEXT DEFAULT 'offline',   -- online/offline/error
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 19.2 页面候选与历史（核心表）
+
+```sql
+CREATE TABLE pages (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,              -- quest/terminal/launch/alert/postcard/report
+    template_id TEXT NOT NULL,       -- QUEST_SCROLL/TERMINAL_STATUS/...
+    priority INTEGER DEFAULT 2,      -- P0=0 ... P5=5
+    urgency TEXT DEFAULT 'normal',   -- critical/important/normal/low
+    interruptible INTEGER DEFAULT 1,
+    expires_at TIMESTAMP,
+    display_duration INTEGER,        -- 建议显示秒数
+    emotion TEXT,                    -- warning/reward/calm/fun
+    trigger_source TEXT,             -- monitor:xxx / user / scheduled / github
+    reason TEXT,                     -- AI 推荐理由
+    payload JSON NOT NULL,           -- 结构化页面内容
+    image_path TEXT,                 -- 渲染后的 PNG 路径
+    status TEXT DEFAULT 'draft',     -- draft/ready/pushed/archived/failed
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    pushed_at TIMESTAMP
+);
+```
+
+### 19.3 其他表
+
+```sql
+-- 显示日志
+CREATE TABLE display_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    page_id TEXT NOT NULL REFERENCES pages(id),
+    device_id TEXT NOT NULL REFERENCES devices(id),
+    pushed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    result TEXT,                     -- success/device_unreachable/timeout
+    error_message TEXT
+);
+
+-- 监控配置
+CREATE TABLE monitors (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    target_type TEXT NOT NULL,       -- http/tcp/mqtt/device
+    endpoint TEXT NOT NULL,
+    interval_seconds INTEGER DEFAULT 60,
+    timeout_seconds INTEGER DEFAULT 10,
+    status TEXT DEFAULT 'unknown',
+    consecutive_failures INTEGER DEFAULT 0,
+    alert_threshold INTEGER DEFAULT 3,
+    last_checked_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 告警记录
+CREATE TABLE incidents (
+    id TEXT PRIMARY KEY,
+    monitor_id TEXT NOT NULL REFERENCES monitors(id),
+    level TEXT DEFAULT 'P1',
+    summary TEXT NOT NULL,
+    ai_diagnosis TEXT,
+    first_action TEXT,
+    opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    recovered_at TIMESTAMP
+);
+
+-- 留言
+CREATE TABLE messages (
+    id TEXT PRIMARY KEY,
+    sender_name TEXT,
+    text TEXT NOT NULL,              -- 最长 80 字
+    safety_status TEXT DEFAULT 'pending',  -- pending/approved/rejected
+    page_id TEXT REFERENCES pages(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 键值设置
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+## 20. AI 结构化输出设计
+
+### 20.1 AI 角色定义
+
+| AI 角色 | 作用 | 应用场景 |
+| --- | --- | --- |
+| **页面导演 (Display Director)** | 判断当前应该显示什么 | 多候选页时做优先级决策 |
+| **内容编剧 (Quest Writer)** | 将普通数据转化为有风格的页面 | 待办转 RPG 卷轴 |
+| **行动教官 (Launch Coach)** | 将复杂目标压缩成今日唯一动作 | 产品上线发射台 |
+| **状态分析员 (Incident Analyst)** | 解释监控数据和异常 | 告警诊断与恢复建议 |
+| **模板设计师 (Template Selector)** | 选择最适合的信息版式 | 告警用警报模板，留言用明信片模板 |
+
+### 20.2 Quest Writer System Prompt
+
+```
+你是 InkOps Command 的任务编剧。将用户的原始待办事项转换为 RPG 风格的任务卷轴。
+
+规则：
+1. 主线任务：从输入中提取最核心的一件事，不超过 24 字
+2. 支线任务：最多 2 条，每条不超过 18 字
+3. Boss 名称：将今日最大阻碍拟人化，不超过 12 字
+4. Boss 弱点：给出克服策略，不超过 20 字
+5. 禁令：必须包含一条"今日禁止做的事"，不超过 24 字
+6. 奖励：完成后的获得感，不超过 20 字
+7. 宣言：一句战斗口号结尾，不超过 24 字
+
+输出必须是合法的 JSON，严格遵循给定 schema。不要输出多余文字。
+```
+
+### 20.3 Quest Output Schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "main_quest": {"type": "string", "maxLength": 24},
+    "side_quests": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 18},
+      "maxItems": 2
+    },
+    "boss_name": {"type": "string", "maxLength": 12},
+    "boss_weakness": {"type": "string", "maxLength": 20},
+    "ban": {"type": "string", "maxLength": 24},
+    "reward": {"type": "string", "maxLength": 20},
+    "declaration": {"type": "string", "maxLength": 24}
+  },
+  "required": ["main_quest", "side_quests", "boss_name", "boss_weakness", "ban", "reward", "declaration"]
+}
+```
+
+### 20.4 Display Director 决策 Prompt
+
+```
+你是 InkOps Command 的 AI 显示导演。根据当前候选页面列表和系统状态，决定哪一页最应该出现在实体墨水屏上。
+
+决策优先级（从高到低）：
+- P0：紧急异常（网站/API/设备离线）→ 必须立即显示
+- P1：关键成果（发布成功、首个订单、新客户咨询）→ 立即显示
+- P2：日常核心页面（早间任务、晚间结算）→ 按时间表显示
+- P3：社交互动（新留言、挑战结果）→ 空闲时显示
+- P4：轻内容（知识卡、宠物状态）→ 不打扰
+- P5：待机页面 → 无事件时
+
+决策时必须给出理由（reason 字段），说明为什么选择这一页而非其他候选页。
+```
+
+### 20.5 LLM Provider 抽象
+
+```python
+from typing import Protocol, Type
+from pydantic import BaseModel
+
+class LLMProvider(Protocol):
+    async def generate_structured(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        output_schema: Type[BaseModel]
+    ) -> BaseModel:
+        """调用大模型并返回经过 schema 校验的结构化输出"""
+        ...
+```
+
+---
+
+## 21. 前端状态管理设计
+
+### 21.1 Zustand Store 拆分
+
+```typescript
+// stores/deviceStore.ts — 设备连接状态
+interface DeviceStore {
+  device: Device | null;
+  isOnline: boolean;
+  lastRefreshAt: Date | null;
+  refreshHistory: DisplayLog[];
+  connect: (ip: string) => Promise<void>;
+  pushPage: (pageId: string) => Promise<void>;
+}
+
+// stores/pageStore.ts — 页面候选与管理
+interface PageStore {
+  currentPage: Page | null;        // 当前预览页面
+  candidatePages: Page[];          // 候选队列
+  pageHistory: Page[];             // 历史页面
+  aiRecommendation: Recommend | null;
+  generatePage: (type: string, input: any) => Promise<Page>;
+  acceptRecommendation: () => Promise<void>;
+  pinPage: (pageId: string, duration: number) => void;
+}
+
+// stores/questStore.ts — 任务卷轴
+interface QuestStore {
+  todayInput: string;
+  currentQuest: QuestPayload | null;
+  persona: 'commander' | 'guild' | 'instructor' | 'pet';
+  generateQuest: (input: string) => Promise<void>;
+  settleQuest: (completed: string[]) => Promise<void>;
+}
+
+// stores/eventStore.ts — 事件时间线
+interface EventStore {
+  events: TimelineEvent[];
+  addEvent: (event: Omit<TimelineEvent, 'id' | 'timestamp'>) => void;
+}
+```
+
+### 21.2 数据流原则
+
+- **TanStack Query** 管理服务端状态（monitor、github、device status），通过 `refetchInterval` 轮询
+- **Zustand** 管理 UI 状态（当前选中页面、表单输入、AI 推荐结果）
+- 页面数据以 TanStack Query 缓存为准，不在 Zustand 中复制
+
+---
+
+## 22. 错误处理与降级策略
+
+### 22.1 故障场景处理
+
+| 故障场景 | 用户看到什么 | 系统行为 |
+| --- | --- | --- |
+| AI 服务不可用 | 生成按钮置灰，提示"AI 引擎离线" | 允许手动编辑 Payload JSON 继续渲染 |
+| 设备离线 | 推送按钮变红，显示上次在线时间 | 页面进入待推送队列，设备上线后自动补推 |
+| 图片渲染失败 | 显示错误占位页 + 具体原因 | 保留 Payload，允许修复后重试 |
+| GitHub API 限流 | Terminal 页显示缓存数据 + 更新时间 | 使用本地缓存，延长轮询间隔 |
+| 监控目标不可达 | Watcher 页标记黄色"检测超时" | 连续失败 3 次后才升级为告警 |
+| SQLite 写入失败 | 右上角警告图标 | 记录日志，不阻断预览功能 |
+
+### 22.2 系统运行模式
+
+```python
+SYSTEM_MODES = {
+    "full":      "全部功能正常",
+    "no_ai":     "AI 不可用，使用手动编辑模式",
+    "no_device": "设备不可达，仅预览模式",
+    "offline":   "无网络，仅本地功能可用",
+    "safe_mode": "最小功能集，仅预览和手动推送"
+}
+```
+
+上位机启动时自动检测各项依赖，在 UI 状态栏显示当前运行模式。
+
+---
+
+## 23. 开发环境 Mock 策略
+
+### 23.1 Mock 层架构
+
+```text
+services/ink-engine/app/providers/
+├── llm.py              # LLM 抽象接口
+├── llm_openai.py       # 真实 OpenAI 兼容实现
+└── llm_mock.py         # Mock：返回固定 JSON，用于 UI 开发
+
+services/ink-engine/app/connectors/
+├── github.py           # 真实 GitHub API
+├── github_mock.py      # Mock：返回预置数据
+├── device_client.py    # 真实 ESP8266 通信
+└── device_mock.py      # Mock：模拟设备 HTTP 响应
+```
+
+### 23.2 Mock 设备模拟器
+
+开发时运行一个轻量 HTTP 服务器完全模拟 ESP8266 行为：
+
+```bash
+python -m app.mock_device --port 8765
+```
+
+上位机连接 `localhost:8765` 即可在无硬件环境下开发所有设备功能。
+
+### 23.3 页面预览快速开发
+
+Python 渲染的 PNG 保存到 `runtime/previews/`，前端通过 Tauri 本地文件协议直接读取，避免每次推送真实屏幕。
+
+---
+
+## 24. 首次使用引导流程
+
+```
+┌─────────────────────────────────────────┐
+│         WELCOME TO INKOPS COMMAND        │
+│                                         │
+│   Step 1/4: 连接设备                     │
+│   搜索局域网内的墨水屏设备...              │
+│   ● INKOPS-NODE-01 (192.168.1.5)        │
+│   ○ 未找到设备（稍后配置）                │
+│                                         │
+│   Step 2/4: 配置 AI 引擎                 │
+│   [Base URL] [API Key] [Model Name]    │
+│   [Test Connection]                    │
+│                                         │
+│   Step 3/4: 设置开发者身份               │
+│   [你的名字/代号] [GitHub 用户名]        │
+│   [主要项目名称]                         │
+│                                         │
+│   Step 4/4: 选择主题风格                 │
+│   ○ 黑客终端（默认）  ○ RPG 公会  ○ 舰桥  │
+│                                         │
+│   [进入指挥舱]                           │
+└─────────────────────────────────────────┘
+```
+
+所有配置写入本地 SQLite 和 `.env`，敏感信息不进仓库。
+
+---
+
+## 25. 最终设计结论摘要
+
+| 维度 | 结论 |
+| --- | --- |
+| 产品名称 | **InkOps Command** |
+| 桌面框架 | Tauri 2 + React + TypeScript + Tailwind CSS |
+| 后端 | Python FastAPI Sidecar |
+| AI 模式 | 5 种角色分工（导演/编剧/教官/分析员/设计师） |
+| 页面策略 | AI 生成结构化 Payload → 固定模板渲染 → 二值化 → 上屏 |
+| 数据存储 | SQLite（本地唯一数据源） |
+| 设备通信 | HTTP 局域网（首阶段复用现有流程，第二阶段自定义固件） |
+| 视觉风格 | 黑客终端 + 深色控制舱 + 荧光绿/警告红点缀 |

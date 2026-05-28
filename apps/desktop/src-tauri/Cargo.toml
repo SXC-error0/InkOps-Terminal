@@ -1,0 +1,37 @@
+[package]
+name = "inkops-command"
+version = "0.1.0"
+description = "AI-Powered Indie Maker E-Ink Terminal - Desktop Command Deck"
+authors = ["shixinchao"]
+license = "MIT"
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.2", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.2", features = [] }
+tauri-plugin-log = "2"
+tauri-plugin-shell = "2"
+# 数据库
+rusqlite = { version = "0.31", features = ["bundled"] }
+# HTTP 客户端
+reqwest = { version = "0.12", features = ["json"] }
+# 图片渲染
+image = "0.25"
+# UUID 生成
+uuid = { version = "1", features = ["v4"] }
+# 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+# 错误处理
+thiserror = "1"
+anyhow = "1"

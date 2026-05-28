@@ -1,6 +1,6 @@
 # InkOps Terminal
 
-> **AI-Powered E-Ink Mission Control for Indie Makers**  
+> **AI-Powered E-Ink Mission Control for Indie Makers**
 > 一台由 AI 驱动、通过电子墨水屏展示关键信息的独立开发者桌面作战终端。
 
 <p align="center">
@@ -9,169 +9,173 @@
 
 ---
 
-## Project Vision｜项目愿景
+## 核心创新: AI Display Director
 
-InkOps Terminal 不是普通的电子纸图片上传工具，也不是一个仅供查看数据的桌面仪表盘。
+墨水屏同一时间只能显示一页。AI Display Director 将所有模块的候选页面按优先级排序，选择当前最值得出现在实体屏幕上的一页。
 
-它连接你的任务、开发进度、GitHub 提交、服务状态与访客留言，通过 AI 对信息进行压缩、判断与编排，并把**当前最值得出现的一页**推送到现实桌面上的 4.2 英寸电子墨水屏。
-
-电子纸刷新不频繁，却能让重要信息安静地存在很久。这正是项目的核心设计理念：
-
-> **One display. One page. The most important thing right now.**
-
----
-
-## Hardware Baseline｜硬件基础
-
-- 4.2 英寸电子墨水屏
-- Waveshare E-Paper ESP8266 Driver Board
-- 已验证：通过微雪官方示例完成屏幕点亮与内容更新
-- 目标显示页面：`400 × 300` 黑白高对比页面
-
-首阶段将复用已跑通的刷新链路，重点完成 AI 内容生成、页面渲染和上位机体验；后续再开发自定义 ESP8266 `InkBridge` 固件，实现自动推送、设备心跳和配网绑定。
+| 优先级 | 事件 | 行为 |
+|--------|------|------|
+| P0 | 网站/API/设备离线 | 立即覆盖 |
+| P1 | 关键成果 | 立即展示 |
+| P2 | 日常核心 | 定时展示 |
+| P3 | 社交互动 | 空闲展示 |
+| P5 | 待机页面 | 常驻 |
 
 ---
 
-## Core Innovation｜核心创新：AI Display Director
+## 功能模块
 
-墨水屏同一时间只能显示一页，但任务、系统告警、项目里程碑、访客留言和战报都可能同时产生。
-
-**AI Display Director** 将所有模块生成的内容视为候选页面，根据事件优先级、紧急程度、时间和展示策略，选择当下最应该出现在实体屏幕上的一页。
-
-| 优先级 | 事件类型 | 示例 | 刷新策略 |
-| ---: | --- | --- | --- |
-| P0 | 紧急异常 | 网站/API/设备离线 | 立即覆盖当前页面 |
-| P1 | 关键成果 | 产品发布、新咨询、首个里程碑 | 立即展示并归档 |
-| P2 | 日常核心页面 | 早晨任务卷轴、夜间结算 | 定时展示 |
-| P3 | 社交互动 | 新留言、挑战结果 | 空闲时展示 |
-| P4 | 轻内容 | 知识卡、宠物状态 | 不打断高优先级页面 |
-| P5 | 待机内容 | 黑客风终端状态页 | 无事件时常驻 |
+| 频道 | 功能 | 快捷键 |
+|------|------|--------|
+| Bridge | 总指挥舱: 屏幕预览 + AI 推荐 + 事件流 | `Ctrl+1` |
+| Quest | 输入待办 → AI 生成 RPG 任务卷轴 | `Ctrl+2` |
+| Launch | 产品进度 + 阻塞项 + AI 今日指令 | `Ctrl+3` |
+| Terminal | GitHub 提交 + 服务状态 + MVP 进度 | `Ctrl+4` |
+| Watcher | HTTP 健康检测 + 自动告警页面 | `Ctrl+5` |
+| Signals | 留言二维码 + 明信片生成 + 安全过滤 | `Ctrl+6` |
+| Studio | 页面历史 + 重渲染 + 导出 | `Ctrl+7` |
+| Device | 墨水屏设备扫描 + 绑定 | `Ctrl+8` |
 
 ---
 
-## MVP Modules｜第一版功能
+## 快速开始
 
-| 模块 | 墨水屏展示内容 | 核心能力 |
-| --- | --- | --- |
-| **Command Bridge** | 当前页面预览与推荐刷新状态 | 上位机总指挥舱、设备推送、事件流 |
-| **AI Daily Quest** | RPG 主线、支线、Boss、奖励、禁令 | 将普通待办转换为任务卷轴 |
-| **Launch Control** | 产品进度、阻塞项、倒计时、今日指令 | 推动 MVP 真正上线 |
-| **Terminal Status** | 项目、GitHub Commit、服务状态、宣言 | 展示开发者身份与战绩 |
-| **System Watcher** | 网站/API/设备在线状态与告警 | 服务异常时生成警报页面 |
-| **Signal Box** | 纸感明信片或秘密电报 | 访客扫码留言并生成展示卡 |
+### 前置条件
 
-### Future Modules｜后续扩展
+- Python 3.10+ 和 Node.js 24+
+- DeepSeek API Key (或其他兼容 OpenAI 协议的 LLM)
+- [可选] 4.2 寸墨水屏 + ESP8266 驱动板
 
-- Token 燃烧告示牌 / 发布战报报纸
-- 独立开发者收入战报 / 网站访客作战牌
-- AI Bug 悬赏令 / GitHub 连击战绩牌
-- ElectronPet 宠物情绪页
-- 每日知识抽卡机 / 交易纪律警示牌
-- 城市探索盲盒票 / 健身升级属性牌
+### 1. 配置
 
----
-
-## Product Experience｜典型演示流程
-
-1. 开发者在上位机输入今天的任务。
-2. AI 将任务生成 RPG 风格任务卷轴，并推送到实体墨水屏。
-3. GitHub 提交后，终端页展示今日开发战绩。
-4. 被监控服务异常时，墨水屏自动切换为 `SYSTEM ALERT`。
-5. 服务恢复或收到扫码留言后，屏幕展示恢复战报或纸感信号卡。
-6. 夜间由 AI 汇总当天事件，生成一页开发战报头版。
-
----
-
-## Recommended Architecture｜技术架构
-
-```text
-┌──────────────────────────────────────────────────────────┐
-│ Desktop App: Tauri 2 + React + TypeScript                 │
-│ Bridge / Quest / Launch / Terminal / Watcher / Signals    │
-└─────────────────────┬────────────────────────────────────┘
-                      │ Local REST / Events
-┌─────────────────────▼────────────────────────────────────┐
-│ Python Ink Engine: FastAPI Sidecar                        │
-│ AI Director | Renderer | Monitor | SQLite | Device Client │
-└─────────────────────┬────────────────────────────────────┘
-                      │ HTTP / Wi-Fi
-┌─────────────────────▼────────────────────────────────────┐
-│ InkBridge: ESP8266 E-Paper Driver Board                   │
-│ Receive Frame | Refresh Display | Report Health           │
-└─────────────────────┬────────────────────────────────────┘
-                      │ SPI
-┌─────────────────────▼────────────────────────────────────┐
-│ 4.2-inch E-Ink Display: The page worth seeing now         │
-└──────────────────────────────────────────────────────────┘
+```bash
+cd services/ink-engine
+cp .env.example .env
+# 编辑 .env 填入 LLM_API_KEY
 ```
 
-| Layer | Technology | Responsibility |
-| --- | --- | --- |
-| Desktop shell | Tauri 2 | Cross-platform upper-computer app |
-| Frontend | React + TypeScript + Tailwind CSS | Command-console UI and e-ink preview |
-| AI/backend | Python FastAPI Sidecar | AI orchestration, APIs, monitors, data access |
-| Local data | SQLite + SQLModel | Tasks, pages, messages, incidents and logs |
-| Rendering | Pillow + QRCode | Render validated page payloads to e-ink PNG |
-| Scheduling | APScheduler | Timed quests, monitoring and page generation |
-| Integrations | GitHub REST API / HTTP health checks | Project activity and system status |
-| Device | Arduino ESP8266 | Display refresh and device connectivity |
+### 2. 启动后端
+
+```bash
+cd services/ink-engine
+pip install -r requirements.txt  # 或 uv sync
+python3 -m uvicorn app.main:app --port 8700
+```
+
+### 3. 启动前端
+
+```bash
+cd apps/desktop
+pnpm install
+npx vite --port 5173
+```
+
+浏览器打开 `http://localhost:5173`
+
+### 4. [可选] 生成演示数据
+
+```bash
+cd services/ink-engine
+python3 ../../scripts/demo_seed.py
+```
+
+一键生成 6 种模板的演示页面到数据库。
 
 ---
 
-## E-Ink Page Templates｜墨水页面模板
+## 技术架构
 
-| Template ID | Purpose |
-| --- | --- |
-| `QUEST_SCROLL` | 每日任务卷轴 |
-| `TERMINAL_STATUS` | 黑客风个人作战终端 |
-| `LAUNCH_PANEL` | 产品上线发射台 |
-| `SYSTEM_ALERT` | 服务或设备异常警报 |
-| `POSTCARD` | 异步电子明信片 |
-| `RELEASE_NEWS` | 发布 / 开发战报头版 |
+```
+┌─ 前端 (React + TypeScript + Vite) ──────────┐
+│  8 频道 SPA, Tailwind CSS, Zustand           │
+│  fetch() → localhost:8700/api/*              │
+└────────────────────┬─────────────────────────┘
+                     │ HTTP REST
+┌────────────────────▼─────────────────────────┐
+│  Python Ink Engine (FastAPI)                 │
+│  AI Agent × 2 | 模板渲染 × 6 | SQLite 9表    │
+│  APScheduler 监控调度 | Director 优先级推荐   │
+└────────────────────┬─────────────────────────┘
+                     │ HTTP / Wi-Fi
+┌────────────────────▼─────────────────────────┐
+│  ESP8266 InkBridge (WIP)                     │
+│  4.2" E-Paper Display / 400 × 300 px        │
+└──────────────────────────────────────────────┘
+```
 
-AI 只生成经过约束的结构化内容，实际布局由固定模板渲染，保证有限的电子纸画布始终清晰、稳定、可读。
-
----
-
-## Roadmap｜开发路线
-
-| Version | Goal | Major Outcomes |
-| --- | --- | --- |
-| `V0.1 Prototype` | 实屏效果验证 | AI 任务卡、图片渲染、手动上屏 |
-| `V0.2 Desktop MVP` | 上位机可操作 | Bridge、Quest、Launch、Terminal、Device |
-| `V0.3 Connected MVP` | 数据与互动联动 | Watcher、GitHub、Signals、页面历史 |
-| `V0.4 Director Lite` | 展现核心创新 | 候选页、优先级推荐、告警覆盖 |
-| `V1.0 Demo Release` | 可对外展示 | 稳定演示、截图、视频与说明文档 |
-| `V2.0 Indie Business` | 连接运营与变现 | 收入战报、访客分析、客户雷达 |
-| `V3.0 Companion Ecosystem` | 扩展硬件生态 | ElectronPet、学习与生活模块 |
-
----
-
-## Documentation｜文档
-
-- [Development Plan / 开发计划](docs/DEVELOPMENT_PLAN.md)
+| 层级 | 技术栈 |
+|------|--------|
+| 前端 | React 19 + TypeScript + Vite + Tailwind CSS + Zustand + TanStack Query |
+| AI/后端 | Python FastAPI + SQLite/SQLModel + Pydantic + Pillow |
+| LLM | DeepSeek Chat (兼容 OpenAI 协议, 可替换) |
+| 渲染 | Pillow + qrcode → Floyd-Steinberg 抖动 → 400×300 黑白 PNG |
+| 调度 | APScheduler (60s 周期监控 + Director 自动推送) |
+| 设备 | ESP8266 Arduino (WIP) |
 
 ---
 
-## Repository Status｜当前状态
+## 6 个页面模板
 
-`Planning / Architecture Design / Hardware Baseline Verified`
-
-当前阶段目标：**输入一句今日任务，AI 生成一张 RPG 任务卷轴页面，并成功显示到实体墨水屏。**
-
----
-
-## Security Notes｜安全约束
-
-- API Key 不提交到仓库，统一使用本地环境变量或安全配置存储。
-- 访客留言在上屏前进行过滤，默认支持人工确认。
-- 交易相关页面仅用于风险纪律提示，不构成投资建议或自动交易承诺。
+| 模板 | 触发 | 示例内容 |
+|------|------|----------|
+| `QUEST_SCROLL` | 用户输入待办 | RPG 任务卡: 主线/Boss/弱点/禁令/奖励 |
+| `TERMINAL_STATUS` | 定时生成 | 项目/提交/服务状态/宣言 |
+| `LAUNCH_PANEL` | 项目分析 | 产品进度/阻塞项/倒计时/指令 |
+| `SYSTEM_ALERT` | 监控失败 | 故障对象/诊断/行动/检测时间 |
+| `POSTCARD` | 留言提交 | 短消息/署名/纸感卡片 |
+| `RELEASE_NEWS` | 战报总结 | 头条/成果摘要/下一步 |
 
 ---
 
-## License
+## 项目结构
 
-License will be determined before the first open-source release.
+```
+InkOps-Terminal/
+├── README.md
+├── docs/
+│   ├── DEVELOPMENT_PLAN.md   # 完整开发计划 (25 章)
+│   ├── PRD.md                # 产品需求文档
+│   ├── UI_SPEC.md            # UI 规格说明书
+│   └── DEMO_SCRIPT.md        # 演示脚本
+├── services/ink-engine/      # Python AI 引擎 & API
+├── apps/desktop/             # React 上位机
+├── firmware/                 # ESP8266 固件 (WIP)
+├── scripts/
+│   └── demo_seed.py          # 演示数据生成器
+└── .gitignore
+```
+
+---
+
+## 文档
+
+- [开发计划](docs/DEVELOPMENT_PLAN.md) — 技术架构、数据模型、API 设计、测试验收
+- [产品需求](docs/PRD.md) — 用户场景、MVP 范围、成功标准
+- [UI 规格](docs/UI_SPEC.md) — 设计 Token、8 频道布局、6 模板排版
+- [演示脚本](docs/DEMO_SCRIPT.md) — 6 场景录制指南
+
+---
+
+## 路线图
+
+| 版本 | 目标 |
+|------|------|
+| `V0.1 Prototype` | 实屏效果验证 (✅ 已完成) |
+| `V0.2 Desktop MVP` | 桌面端可操作 (✅ 已完成) |
+| `V0.3 Connected MVP` | 数据与互动联动 (✅ 已完成) |
+| `V0.4 Director Lite` | 核心创新落地 (✅ 已完成) |
+| `V1.0 Demo Release` | 对外展示发布 (🔄 进行中) |
+| `V2.0 Indie Business` | 连接运营与变现 |
+| `V3.0 Companion Ecosystem` | 扩展硬件生态 |
+
+---
+
+## 安全约束
+
+- API Key 不进仓库 (`.env` → `.gitignore`)
+- 用户输入经 Pydantic Schema 校验
+- 留言提交经安全过滤 (敏感词 + 长度限制)
+- 敏感信息不出现在截屏和演示视频中
 
 ---
 
