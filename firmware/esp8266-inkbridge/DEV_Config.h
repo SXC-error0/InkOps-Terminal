@@ -67,6 +67,7 @@
 #define DEV_Delay_ms(__xms) delay(__xms)
 
 /*------------------------------------------------------------------------------------------------------*/
+void GPIO_Config(void);
 UBYTE DEV_Module_Init(void);
 void GPIO_Mode(UWORD GPIO_Pin, UWORD Mode);
 void DEV_SPI_WriteByte(UBYTE data);

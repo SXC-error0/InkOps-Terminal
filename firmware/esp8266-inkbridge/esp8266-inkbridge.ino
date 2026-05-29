@@ -183,9 +183,10 @@ void handleFrame() {
     return;
   }
 
-  size_t bodyLen = server.clientContentLength();
+  // ESP8266WebServer 在调用 handler 前已将 body 存入 arg("plain")
+  const String& body = server.arg("plain");
+  size_t bodyLen = body.length();
 
-  // 验证数据大小
   if (bodyLen != BUF_SIZE) {
     char msg[128];
     snprintf(msg, sizeof(msg),
@@ -197,33 +198,13 @@ void handleFrame() {
     return;
   }
 
-  // 读取请求体到显示缓冲区
-  WiFiClient client = server.client();
-  size_t read = 0;
-  unsigned long deadline = millis() + 5000;  // 5 秒超时
-  while (read < BUF_SIZE) {
-    if (millis() > deadline) {
-      server.sendHeader("Access-Control-Allow-Origin", "*");
-      server.send(408, "text/plain", "Transfer timeout");
-      Serial.printf("帧传输超时 (已收 %d/%d 字节)\n", (int)read, BUF_SIZE);
-      return;
-    }
-    if (!client.connected()) {
-      Serial.println("客户端意外断开");
-      return;
-    }
-    if (client.available()) {
-      displayBuffer[read++] = client.read();
-    }
-    yield();  // 喂看门狗，防止 WDT 复位
-  }
-
+  memcpy(displayBuffer, body.c_str(), BUF_SIZE);
   bufferReady = true;
-  Serial.printf("帧数据接收成功: %d 字节\n", read);
+  Serial.printf("帧数据接收成功: %d 字节\n", BUF_SIZE);
 
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "application/json",
-    "{\"status\":\"ok\",\"bytesReceived\":" + String(read) + "}");
+    "{\"status\":\"ok\",\"bytesReceived\":" + String(BUF_SIZE) + "}");
 }
 
 /// POST /api/display/refresh - 执行屏幕刷新
