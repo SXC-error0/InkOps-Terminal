@@ -23,8 +23,8 @@
 #include "EPD_4in2.h"
 
 // ========== 可配置参数 ==========
-const char* DEFAULT_SSID     = "INKOPS-NET";
-const char* DEFAULT_PASSWORD = "inkops123";
+const char* DEFAULT_SSID     = "sxc";
+const char* DEFAULT_PASSWORD = "999lxjaini";
 
 // EEPROM 地址布局
 #define EEPROM_SIZE      512
@@ -142,6 +142,7 @@ void initDisplay() {
 
 /// GET /api/device/status - 返回设备状态 JSON
 void handleStatus() {
+  String mac = WiFi.macAddress();
   char json[512];
   snprintf(json, sizeof(json),
     "{"
@@ -156,7 +157,7 @@ void handleStatus() {
     "\"lastRefreshAt\":%lu,"
     "\"lastRefreshAgo\":%lu"
     "}",
-    deviceName,
+    mac.c_str(),
     deviceName,
     deviceIP.c_str(),
     bufferReady ? "true" : "false",
@@ -199,19 +200,22 @@ void handleFrame() {
   // 读取请求体到显示缓冲区
   WiFiClient client = server.client();
   size_t read = 0;
-  while (read < BUF_SIZE && client.connected()) {
+  unsigned long deadline = millis() + 5000;  // 5 秒超时
+  while (read < BUF_SIZE) {
+    if (millis() > deadline) {
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+      server.send(408, "text/plain", "Transfer timeout");
+      Serial.printf("帧传输超时 (已收 %d/%d 字节)\n", (int)read, BUF_SIZE);
+      return;
+    }
+    if (!client.connected()) {
+      Serial.println("客户端意外断开");
+      return;
+    }
     if (client.available()) {
       displayBuffer[read++] = client.read();
     }
-  }
-
-  // 验证读取完整性
-  if (read != BUF_SIZE) {
-    char msg[64];
-    snprintf(msg, sizeof(msg), "Incomplete transfer: %d/%d bytes", (int)read, BUF_SIZE);
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(400, "text/plain", msg);
-    return;
+    yield();  // 喂看门狗，防止 WDT 复位
   }
 
   bufferReady = true;
@@ -237,6 +241,9 @@ void handleRefresh() {
 
   // 写入显示缓冲区
   EPD_4IN2_Display(displayBuffer);
+
+  // 刷新后进入低功耗睡眠，延长屏幕寿命
+  EPD_4IN2_Sleep();
 
   // 记录时间
   lastRefreshTime = millis() / 1000;
@@ -292,12 +299,17 @@ void handleConfig() {
 
   if (changed) {
     saveConfig();
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.send(200, "application/json",
+      "{\"status\":\"ok\",\"message\":\"config saved, restarting...\"}");
+    delay(500);
+    ESP.restart();
+    return;
   }
 
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "application/json",
-    "{\"status\":\"ok\",\"message\":\"config updated"
-    + String(changed ? "" : " (no changes)") + "\"}");
+    "{\"status\":\"ok\",\"message\":\"config updated (no changes)\"}");
 }
 
 /// CORS 预检 (OPTIONS)
@@ -363,6 +375,14 @@ void setup() {
 // ========== 主循环 ==========
 
 void loop() {
+  // Wi-Fi 断线自动重连 (非阻塞, 每 30 秒尝试一次)
+  static unsigned long lastReconnect = 0;
+  if (WiFi.status() != WL_CONNECTED && millis() - lastReconnect > 30000) {
+    lastReconnect = millis();
+    Serial.println("[重连] Wi-Fi 断线, 发起重连...");
+    WiFi.reconnect();
+  }
+
   server.handleClient();
 
   // 每 60 秒输出一次心跳日志
