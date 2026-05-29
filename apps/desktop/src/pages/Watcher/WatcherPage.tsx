@@ -1,95 +1,38 @@
 import { useState, useEffect } from "react"
-import { ShieldAlert, Globe, RefreshCw, Plus, Activity } from "lucide-react"
+import { ShieldAlert, Globe, Plus, RefreshCw, Activity } from "lucide-react"
 import * as api from "#/lib/api"
 
-interface MonitorInfo { id: string; name: string; target_type: string; endpoint: string; status: string; last_checked_at: string | null }
-interface IncidentInfo { id: string; monitor_id: string; level: string; summary: string; opened_at: string }
+interface M { id: string; name: string; target_type: string; endpoint: string; status: string }
+interface I { id: string; monitor_id: string; level: string; summary: string; opened_at: string }
 
 export function WatcherPage() {
-  const [monitors, setMonitors] = useState<MonitorInfo[]>([])
-  const [incidents, setIncidents] = useState<IncidentInfo[]>([])
-  const [showAdd, setShowAdd] = useState(false)
-  const [name, setName] = useState(""); const [endpoint, setEndpoint] = useState("")
-
-  const load = async () => {
-    try {
-      const [m, i] = await Promise.all([api.getMonitors() as Promise<MonitorInfo[]>, api.getActiveIncidents() as Promise<IncidentInfo[]>])
-      setMonitors(m); setIncidents(i)
-    } catch { /* */ }
-  }
+  const [mons, setMons] = useState<M[]>([]); const [incs, setIncs] = useState<I[]>([]); const [show, setShow] = useState(false); const [nm, setNm] = useState(""); const [ep, setEp] = useState("")
+  const load = async () => { try { const [m, i] = await Promise.all([api.getMonitors() as Promise<M[]>, api.getActiveIncidents() as Promise<I[]>]); setMons(m); setIncs(i) } catch { /* */ } }
   useEffect(() => { load() }, [])
-
-  const handleAdd = async () => {
-    if (!name || !endpoint) return
-    await api.createMonitor({ name, target_type: "http", endpoint })
-    setShowAdd(false); setName(""); setEndpoint(""); await load()
-  }
-
-  const statusStyle = (s: string) => s === "online" ? { color: "var(--color-success)" } : s === "offline" ? { color: "var(--color-danger)" } : { color: "var(--color-text-muted)" }
+  const add = async () => { if (!nm || !ep) return; await api.createMonitor({ name: nm, target_type: "http", endpoint: ep }); setShow(false); setNm(""); setEp(""); await load() }
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-2xl mx-auto p-6 space-y-5">
-        <div className="card">
-          <div className="card-header">
-            <ShieldAlert size={15} style={{ color: "var(--color-warning)" }} />
-            <span>监控告警</span>
-            <button onClick={() => setShowAdd(!showAdd)} className="btn btn-secondary ml-auto" style={{ padding: "4px 10px", fontSize: 12 }}>
-              <Plus size={12} />添加
-            </button>
-          </div>
-          {showAdd && (
-            <div className="px-4 py-3 flex gap-2" style={{ borderBottom: "1px solid var(--color-border-light)" }}>
-              <input value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="名称" style={{ width: 120 }} />
-              <input value={endpoint} onChange={(e) => setEndpoint(e.target.value)} className="input flex-1" placeholder="https://example.com" />
-              <button onClick={handleAdd} className="btn btn-primary" style={{ padding: "6px 14px", fontSize: 12 }}>确定</button>
+    <div className="h-full overflow-auto"><div className="p-6"><div className="max-w-xl mx-auto space-y-4">
+      <div className="bg-white border border-ink-200 rounded-lg shadow-xs overflow-hidden">
+        <div className="flex items-center gap-2 h-11 px-5 border-b border-ink-100 text-sm font-semibold text-ink-500 select-none"><ShieldAlert size={15} className="text-warning" />监控告警<button onClick={() => setShow(!show)} className="ml-auto inline-flex items-center justify-center h-7 px-2.5 text-xs font-medium rounded text-ink-400 hover:bg-ink-50 hover:text-ink-500 transition-colors"><Plus size={11} />添加</button></div>
+        {show && <div className="px-4 py-3 flex gap-2 border-b border-ink-100"><input value={nm} onChange={(e) => setNm(e.target.value)} className="w-full h-[34px] px-2.5 text-sm font-sans text-ink-600 bg-white border border-ink-200 rounded placeholder:text-ink-300 focus:border-accent focus:ring-3 focus:ring-accent-light outline-none transition-all" placeholder="名称" style={{ width: 130 }} /><input value={ep} onChange={(e) => setEp(e.target.value)} className="w-full h-[34px] px-2.5 text-sm font-sans text-ink-600 bg-white border border-ink-200 rounded placeholder:text-ink-300 focus:border-accent focus:ring-3 focus:ring-accent-light outline-none transition-all flex-1" placeholder="https://example.com" /><button onClick={add} className="inline-flex items-center justify-center h-7 px-2.5 text-xs font-medium rounded bg-accent text-white hover:bg-accent-strong transition-colors">确定</button></div>}
+        <div className="p-4 space-y-1.5">
+          {mons.length === 0 ? <div className="flex flex-col items-center py-12 text-center"><div className="size-10 rounded-full bg-ink-50 flex items-center justify-center mb-3"><Globe size={20} className="text-ink-200" /></div><h3 className="text-sm font-medium text-ink-500">暂无监控</h3><p className="text-xs text-ink-400 mt-1">点击添加开始</p></div> : mons.map((m) => (
+            <div key={m.id} className="flex items-center justify-between px-4 py-3 rounded-md bg-ink-50 border border-ink-100 hover:bg-ink-100 transition-colors duration-100">
+              <div className="flex items-center gap-3 min-w-0"><Globe size={15} className="text-ink-400 shrink-0" /><div className="min-w-0"><div className="text-[13px] font-medium text-ink-600 truncate">{m.name}</div><div className="text-[11px] text-ink-400 truncate mt-0.5">{m.endpoint}</div></div></div>
+              <div className="flex items-center gap-3 shrink-0"><span className={`text-xs font-medium ${m.status === "online" ? "text-success" : "text-danger"}`}>{m.status.toUpperCase()}</span><button onClick={async () => { await api.runHealthCheck(m.id); await load() }} className="inline-flex items-center justify-center size-7 rounded text-ink-400 hover:bg-ink-50 hover:text-ink-500 transition-colors"><RefreshCw size={12} /></button></div>
             </div>
-          )}
-          <div className="card-body space-y-2">
-            {monitors.length === 0 ? (
-              <p className="text-center text-[13px] py-8" style={{ color: "var(--color-text-muted)" }}>暂无监控, 点击"添加"开始</p>
-            ) : (
-              monitors.map((m) => (
-                <div key={m.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: "var(--color-bg)", border: "1px solid var(--color-border-light)" }}>
-                  <div className="flex items-center gap-3">
-                    <Globe size={15} style={{ color: "var(--color-text-muted)" }} />
-                    <div>
-                      <div className="text-[13px] font-medium" style={{ color: "var(--color-text)" }}>{m.name}</div>
-                      <div className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>{m.endpoint}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[12px] font-medium" style={statusStyle(m.status)}>{m.status.toUpperCase()}</span>
-                    <button onClick={async () => { await api.runHealthCheck(m.id); await load() }} className="btn btn-ghost" style={{ padding: 4 }}>
-                      <RefreshCw size={13} />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          ))}
         </div>
-
-        {incidents.length > 0 && (
-          <div className="card">
-            <div className="card-header">
-              <Activity size={15} style={{ color: "var(--color-danger)" }} />
-              <span>活跃告警 ({incidents.length})</span>
-            </div>
-            <div className="card-body space-y-2">
-              {incidents.map((inc) => (
-                <div key={inc.id} className="p-3 rounded-lg" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
-                  <div className="flex justify-between text-[12px]">
-                    <span className="font-medium" style={{ color: "var(--color-danger)" }}>{inc.level}</span>
-                    <span style={{ color: "var(--color-text-muted)" }}>{inc.opened_at?.slice(0, 19)}</span>
-                  </div>
-                  <p className="text-[13px] mt-1" style={{ color: "var(--color-text-secondary)" }}>{inc.summary}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+      {incs.length > 0 && (
+        <div className="bg-white border border-ink-200 rounded-lg shadow-xs overflow-hidden">
+          <div className="flex items-center gap-2 h-11 px-5 border-b border-ink-100 text-sm font-semibold text-ink-500 select-none"><Activity size={15} className="text-danger" />活跃告警 ({incs.length})</div>
+          <div className="p-4 space-y-2">{incs.map((inc) => (
+            <div key={inc.id} className="flex items-start gap-2.5 p-3 rounded-md bg-danger-light/50 border border-danger-light text-[13px]"><div><div className="flex justify-between text-xs"><span className="font-medium text-danger">{inc.level}</span><span className="text-ink-400">{inc.opened_at?.slice(0, 19)}</span></div><p className="text-ink-500 mt-1">{inc.summary}</p></div></div>
+          ))}</div>
+        </div>
+      )}
+    </div></div></div>
   )
 }

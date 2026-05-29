@@ -1,73 +1,40 @@
 import type { Page } from "#/lib/types"
 import { getPageImageUrl } from "#/lib/api"
-import { MonitorDot } from "lucide-react"
+import { Monitor } from "lucide-react"
 
-interface Props {
-  page: Page | null
-}
+interface Props { page: Page | null }
 
 export function EInkPreview({ page }: Props) {
   const imageUrl = page ? getPageImageUrl(page.id) : null
 
   return (
-    <div className="relative inline-block">
-      {/* 设备模拟外壳 */}
-      <div
-        className="rounded-2xl p-4"
-        style={{
-          background: "#1e293b",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05)",
-        }}
-      >
-        {/* 顶部装饰条 */}
-        <div className="flex items-center justify-center mb-3">
-          <div className="w-10 h-1 rounded-full" style={{ background: "#334155" }} />
+    <div className="relative inline-block group">
+      <div className="rounded-2xl p-5 bg-eink-case
+        shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_50px_-12px_rgba(0,0,0,0.25),0_4px_12px_-4px_rgba(0,0,0,0.15)]">
+        <div className="flex items-center justify-center mb-4">
+          <div className="w-12 h-1 rounded-full bg-white/[0.08]" />
         </div>
-
-        {/* 屏幕区域 */}
-        <div
-          className="overflow-hidden rounded-sm"
-          style={{
-            width: 400,
-            height: 300,
-            maxWidth: "100%",
-            background: "#fafaf9",
-            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06)",
-          }}
-        >
+        <div className={`overflow-hidden w-[400px] h-[300px] max-w-full bg-eink-screen
+          shadow-[0_0_0_4px_#0f172a,0_0_0_5px_#334155,inset_0_1px_4px_rgba(0,0,0,0.06)]
+          transition-shadow duration-300
+          ${imageUrl ? "group-hover:shadow-[0_0_0_4px_#0f172a,0_0_0_5px_#334155,inset_0_1px_4px_rgba(0,0,0,0.06),0_0_30px_-10px_rgba(14,165,233,0.15)]" : ""}`}>
           {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={page?.templateId ?? "e-ink"}
-              className="w-full h-full object-contain"
-              style={{ imageRendering: "pixelated" }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none"
-              }}
-            />
+            <img src={imageUrl} alt={page?.templateId ?? "e-ink"} className="w-full h-full object-contain" style={{ imageRendering: "pixelated" }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center" style={{ color: "#d6d3d1" }}>
-              <MonitorDot size={36} strokeWidth={1.5} />
-              <span className="mt-3 text-[11px] tracking-widest" style={{ fontFamily: "var(--font-mono)" }}>
-                NO SIGNAL
-              </span>
-              <span className="text-[10px] mt-1">等待页面生成...</span>
+            <div className="w-full h-full flex flex-col items-center justify-center">
+              <Monitor size={36} strokeWidth={1} className="text-ink-200/50" />
+              <div className="mt-4 text-[11px] font-mono tracking-[0.2em] text-ink-300">NO SIGNAL</div>
+              <div className="mt-1.5 text-[10px] text-ink-300/60">等待页面生成...</div>
             </div>
           )}
         </div>
-
-        {/* 底部标签 */}
-        <div className="flex items-center justify-between mt-3 px-1">
-          <span
-            className="text-[9px] tracking-widest opacity-30"
-            style={{ fontFamily: "var(--font-mono)", color: "white" }}
-          >
-            4.2" E-PAPER · 400×300
-          </span>
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ background: page ? "#4ade80" : "#475569" }}
-          />
+        <div className="flex items-center justify-between mt-4 px-1">
+          <span className="text-[9px] font-mono tracking-[0.15em] text-white/25">4.2" E-PAPER · 400×300</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-mono text-white/25">{page ? "READY" : "IDLE"}</span>
+            <span className={`size-2 rounded-full ${page ? "bg-success" : "bg-white/[0.15]"}`} />
+          </div>
         </div>
       </div>
     </div>

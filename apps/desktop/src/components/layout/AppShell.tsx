@@ -10,29 +10,17 @@ import { SignalsPage } from "#/pages/Signals/SignalsPage"
 import { StudioPage } from "#/pages/Studio/StudioPage"
 import { DevicePage } from "#/pages/Device/DevicePage"
 
-const pages = {
-  bridge: BridgePage,
-  quest: QuestPage,
-  launch: LaunchPage,
-  terminal: TerminalPage,
-  watcher: WatcherPage,
-  signals: SignalsPage,
-  studio: StudioPage,
-  device: DevicePage,
-}
+const pages = { bridge: BridgePage, quest: QuestPage, launch: LaunchPage, terminal: TerminalPage, watcher: WatcherPage, signals: SignalsPage, studio: StudioPage, device: DevicePage }
 
 export function AppShell() {
-  const activeChannel = useAppStore((s) => s.activeChannel)
-  const ActivePage = pages[activeChannel]
-
+  const ch = useAppStore((s) => s.activeChannel)
+  const Page = pages[ch]
   return (
-    <div className="flex h-full w-full" style={{ background: "var(--color-bg)" }}>
+    <div className="flex h-full w-full" style={{ background: "var(--bg-page)" }}>
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <StatusBar />
-        <main className="flex-1 overflow-hidden">
-          <ActivePage />
-        </main>
+        <main className="flex-1 overflow-hidden"><Page /></main>
       </div>
     </div>
   )
