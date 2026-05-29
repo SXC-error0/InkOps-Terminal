@@ -22,7 +22,7 @@ class SystemAlertRenderer(RendererBase):
         self.draw_text_left(img, 16, y, "TARGET:", self._small_font)
         y += 14
         self.draw_text_left(img, 20, y, payload.get("name", "Unknown Service"), self._body_font)
-        y += 6
+        y += 18
         self.draw_text_left(img, 20, y, payload.get("endpoint", ""), self._small_font)
         y += 22
 

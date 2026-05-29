@@ -8,6 +8,8 @@ interface AppState {
   setSystemMode: (mode: SystemMode) => void
   isSidebarCollapsed: boolean
   toggleSidebar: () => void
+  isPreviewPanelOpen: boolean
+  togglePreviewPanel: () => void
   backendOnline: boolean
   setBackendOnline: (online: boolean) => void
 }
@@ -19,6 +21,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSystemMode: (mode) => set({ systemMode: mode }),
   isSidebarCollapsed: false,
   toggleSidebar: () => set((s) => ({ isSidebarCollapsed: !s.isSidebarCollapsed })),
+  isPreviewPanelOpen: true,
+  togglePreviewPanel: () => set((s) => ({ isPreviewPanelOpen: !s.isPreviewPanelOpen })),
   backendOnline: false,
   setBackendOnline: (online) => set({ backendOnline: online }),
 }))

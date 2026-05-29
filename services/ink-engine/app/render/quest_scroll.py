@@ -45,7 +45,7 @@ class QuestScrollRenderer(RendererBase):
         y += 8
         self.draw_text_left(img, 16, y, f"BOSS: {payload.boss_name}", self._body_font)
         y += 18
-        weakness_font = self._mono_font or self._body_font
+        weakness_font = self._body_font
         self.draw_text_left(img, 16, y, f"WEAKNESS: {payload.boss_weakness}", weakness_font)
         y += 22
 

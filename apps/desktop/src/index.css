@@ -1,37 +1,181 @@
 @import "tailwindcss";
 
 /* ================================================================
-   InkOps Terminal — 精密工业仪表盘 Design System
+   InkOps Terminal — Cyber-Industrial Console Design System v4.0
    ================================================================ */
 
 @theme {
-  --color-ink-25: #fbfbfb;   --color-ink-50: #f6f6f7;
-  --color-ink-100: #eeeff0;  --color-ink-150: #e4e5e7;
-  --color-ink-200: #d1d3d6;  --color-ink-300: #a3a7ad;
-  --color-ink-400: #727780;  --color-ink-500: #535860;
-  --color-ink-600: #3e4149;  --color-ink-700: #272930;
-  --color-ink-800: #16171c;  --color-ink-900: #0b0c0e;
-  --color-sidebar-bg: #0b0c0e;     --color-sidebar-hover: #18191d;
-  --color-sidebar-active: #222327;  --color-sidebar-border: #1a1b1f;
-  --color-sidebar-text: #6b6f78;   --color-sidebar-text-active: #eeeff0;
-  --color-accent: #0ea5e9;         --color-accent-light: #e0f2fe;
-  --color-accent-strong: #0284c7;  --color-success: #10b981;
-  --color-success-light: #d1fae5;  --color-warning: #f59e0b;
-  --color-warning-light: #fef3c7;  --color-danger: #ef4444;
-  --color-danger-light: #fee2e2;   --color-purple: #8b5cf6;
-  --color-purple-light: #ede9fe;   --color-eink-case: #1e293b;
-  --color-eink-screen: #fafaf9;
+  /* Fonts */
+  --font-sans: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", monospace;
+
+  /* Ink Color Palette (Clean Light Theme with High Contrast) */
+  --color-ink-25: transparent;
+  --color-ink-50: rgba(255, 255, 255, 0.75); /* Light glass surface */
+  --color-ink-100: rgba(0, 0, 0, 0.04);       /* Thin separators */
+  --color-ink-150: rgba(0, 0, 0, 0.08);       /* Hover highlights / inputs border */
+  --color-ink-200: rgba(0, 0, 0, 0.12);       /* Default border */
+  --color-ink-300: #8892b0;                   /* Muted placeholders */
+  --color-ink-400: #626a80;                   /* Secondary labels */
+  --color-ink-500: #42495d;                   /* Standard description text */
+  --color-ink-600: #212638;                   /* High readability body text */
+  --color-ink-700: #0a0d14;                   /* Heading / Title text (Deep space black) */
+  --color-ink-800: #020305;
+  --color-ink-900: #000000;
+
+  /* Sidebar Theme (Stays Dark Titanium for Professional Console Look) */
+  --color-sidebar-bg: #090b11;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.04);
+  --color-sidebar-active: rgba(14, 165, 233, 0.12);
+  --color-sidebar-border: rgba(255, 255, 255, 0.04);
+  --color-sidebar-text: #6b779a;
+  --color-sidebar-text-active: #edf2ff;
+
+  /* Accents & Highlights */
+  --color-accent: #0284c7;         /* Sky Blue */
+  --color-accent-light: #0ea5e9;
+  --color-accent-strong: #0369a1;
+  
+  --color-success: #059669;        /* Forest Green */
+  --color-success-light: rgba(5, 150, 105, 0.08);
+  
+  --color-warning: #d97706;        /* Warm Amber */
+  --color-warning-light: rgba(217, 119, 6, 0.08);
+  
+  --color-danger: #e11d48;         /* Rose Alert */
+  --color-danger-light: rgba(225, 29, 72, 0.08);
+  
+  --color-purple: #7c3aed;         /* AI Purple */
+  --color-purple-light: rgba(124, 58, 237, 0.08);
+
+  --color-eink-case: #0a0d14;      /* Titanium physical preview bezel */
+  --color-eink-screen: #f5f5f4;    /* E-Ink Paper screen panel */
+
+  /* Spacings & Border Radii */
+  --spacing-55: 13.75rem;          /* Sidebar width (220px) */
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body, #root { height: 100%; width: 100%; overflow: hidden; }
-body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  font-size: 13px; line-height: 1.5; color: var(--color-ink-600);
-  background: var(--color-ink-25); -webkit-font-smoothing: antialiased;
+/* ================================================================
+   Global Reset & Overrides
+   ================================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-ink-200); border-radius: 20px; }
-@keyframes fade-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-.animate-fade-in { animation: fade-in .12s ease-out; }
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* Light Cybernetic Grid/Mesh Background */
+  background: radial-gradient(circle at 50% -20%, #f1f5f9 0%, #e2e8f0 100%) !important;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-ink-500);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light glassmorphic card */
+.cyber-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.04), 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+  transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cyber-card:hover {
+  border-color: rgba(2, 132, 199, 0.25);
+  box-shadow: 
+    0 12px 40px 0 rgba(2, 132, 199, 0.06), 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* Inputs & Textareas */
+input, textarea, select {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: var(--color-ink-700) !important;
+  transition: all 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: rgba(2, 132, 199, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12) !important;
+  background: #ffffff !important;
+  outline: none;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(2, 132, 199, 0.4);
+}
+
+/* Selection Color */
+::selection {
+  background: rgba(2, 132, 199, 0.1);
+  color: var(--color-ink-700);
+}
+
+/* ================================================================
+   Animations & Retro CRT Simulator
+   ================================================================ */
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.04); }
+}
+.breath-glow {
+  animation: pulse-glow 3s infinite ease-in-out;
+}
+
+/* RPG Scroll aesthetics */
+.rpg-scroll {
+  background: linear-gradient(135deg, #181410 0%, #0d0c0a 100%);
+  border: 1px solid #c29d6d;
+  box-shadow: inset 0 0 20px rgba(194, 157, 109, 0.15), 0 4px 12px rgba(0,0,0,0.5);
+  color: #ebd7bd;
+}
+
+/* Hazard pattern divider */
+.hazard-line {
+  height: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #d97706,
+    #d97706 8px,
+    #eeeff2 8px,
+    #eeeff2 16px
+  );
+  opacity: 0.85;
+}
+
+.hazard-badge {
+  background: #d97706;
+  color: #eeeff2;
+  font-weight: 700;
+  text-shadow: none;
+}

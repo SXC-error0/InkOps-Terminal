@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 # 已知的 CJK 字体路径候选
 _CJK_FONT_CANDIDATES = [
-    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
     "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
     "/usr/share/fonts/truetype/arphic/ukai.ttc",
     "/usr/share/fonts/truetype/arphic/uming.ttc",
 ]
