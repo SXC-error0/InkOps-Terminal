@@ -70,3 +70,6 @@ firmware/**/build/
 firmware/**/*.bin
 firmware/**/*.elf
 firmware/**/*.map
+
+# Hardware dumps and local probe artifacts
+hardware_backups/
