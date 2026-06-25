@@ -39,12 +39,20 @@ function App() {
   const setCandidates = usePageStore((s) => s.setCandidates)
   const setRecommendation = usePageStore((s) => s.setRecommendation)
 
-  // 键盘快捷键切换频道
+  // 键盘快捷键
   useEffect(() => {
+    const togglePreviewPanel = useAppStore.getState().togglePreviewPanel
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+1-8: 切换频道
       if (e.ctrlKey && channelKeys[e.key]) {
         e.preventDefault()
         setActiveChannel(channelKeys[e.key])
+        return
+      }
+      // P: 切换设备面板
+      if (e.key === "p" && !e.ctrlKey && !e.metaKey && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault()
+        togglePreviewPanel()
       }
     }
 

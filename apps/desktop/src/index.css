@@ -1,181 +1,207 @@
 @import "tailwindcss";
 
 /* ================================================================
-   InkOps Terminal — Cyber-Industrial Console Design System v4.0
+   InkOps Terminal — Material Design 3 Design System v5.0
    ================================================================ */
 
 @theme {
-  /* Fonts */
-  --font-sans: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", monospace;
+  /* Font Families */
+  --font-sans:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Geist", sans-serif;
+  --font-mono:    "JetBrains Mono", "Fira Code", monospace;
 
-  /* Ink Color Palette (Clean Light Theme with High Contrast) */
-  --color-ink-25: transparent;
-  --color-ink-50: rgba(255, 255, 255, 0.75); /* Light glass surface */
-  --color-ink-100: rgba(0, 0, 0, 0.04);       /* Thin separators */
-  --color-ink-150: rgba(0, 0, 0, 0.08);       /* Hover highlights / inputs border */
-  --color-ink-200: rgba(0, 0, 0, 0.12);       /* Default border */
-  --color-ink-300: #8892b0;                   /* Muted placeholders */
-  --color-ink-400: #626a80;                   /* Secondary labels */
-  --color-ink-500: #42495d;                   /* Standard description text */
-  --color-ink-600: #212638;                   /* High readability body text */
-  --color-ink-700: #0a0d14;                   /* Heading / Title text (Deep space black) */
-  --color-ink-800: #020305;
-  --color-ink-900: #000000;
+  /* Font Sizes */
+  --text-display-lg:   3rem;        /* 48px */
+  --text-headline-md:  1.5rem;      /* 24px */
+  --text-headline-sm:  1.25rem;     /* 20px */
+  --text-body-base:    1rem;        /* 16px */
+  --text-body-sm:      0.875rem;    /* 14px */
+  --text-code-sm:      0.8125rem;   /* 13px */
+  --text-label-caps:   0.6875rem;   /* 11px */
 
-  /* Sidebar Theme (Stays Dark Titanium for Professional Console Look) */
-  --color-sidebar-bg: #090b11;
-  --color-sidebar-hover: rgba(255, 255, 255, 0.04);
-  --color-sidebar-active: rgba(14, 165, 233, 0.12);
-  --color-sidebar-border: rgba(255, 255, 255, 0.04);
-  --color-sidebar-text: #6b779a;
-  --color-sidebar-text-active: #edf2ff;
+  /* ── MD3 Primary ── */
+  --color-primary:                   #000000;
+  --color-on-primary:                #ffffff;
+  --color-primary-container:         #161c24;
+  --color-on-primary-container:      #7e848e;
+  --color-primary-fixed:             #dde3ee;
+  --color-primary-fixed-dim:         #c1c7d2;
+  --color-on-primary-fixed:          #161c24;
+  --color-on-primary-fixed-variant:  #414750;
+  --color-inverse-primary:           #c1c7d2;
 
-  /* Accents & Highlights */
-  --color-accent: #0284c7;         /* Sky Blue */
-  --color-accent-light: #0ea5e9;
-  --color-accent-strong: #0369a1;
-  
-  --color-success: #059669;        /* Forest Green */
-  --color-success-light: rgba(5, 150, 105, 0.08);
-  
-  --color-warning: #d97706;        /* Warm Amber */
-  --color-warning-light: rgba(217, 119, 6, 0.08);
-  
-  --color-danger: #e11d48;         /* Rose Alert */
-  --color-danger-light: rgba(225, 29, 72, 0.08);
-  
-  --color-purple: #7c3aed;         /* AI Purple */
-  --color-purple-light: rgba(124, 58, 237, 0.08);
+  /* ── MD3 Secondary ── */
+  --color-secondary:                  #0058be;
+  --color-on-secondary:               #ffffff;
+  --color-secondary-container:        #2170e4;
+  --color-on-secondary-container:     #fefcff;
+  --color-secondary-fixed:            #d8e2ff;
+  --color-secondary-fixed-dim:        #adc6ff;
+  --color-on-secondary-fixed:         #001a42;
+  --color-on-secondary-fixed-variant: #004395;
 
-  --color-eink-case: #0a0d14;      /* Titanium physical preview bezel */
-  --color-eink-screen: #f5f5f4;    /* E-Ink Paper screen panel */
+  /* ── MD3 Tertiary ── */
+  --color-tertiary:                   #000000;
+  --color-on-tertiary:                #ffffff;
+  --color-tertiary-container:         #2a1700;
+  --color-on-tertiary-container:      #b87500;
+  --color-tertiary-fixed:             #ffddb8;
+  --color-tertiary-fixed-dim:         #ffb95f;
+  --color-on-tertiary-fixed:          #2a1700;
+  --color-on-tertiary-fixed-variant:  #653e00;
 
-  /* Spacings & Border Radii */
-  --spacing-55: 13.75rem;          /* Sidebar width (220px) */
+  /* ── MD3 Error ── */
+  --color-error:             #ba1a1a;
+  --color-on-error:          #ffffff;
+  --color-error-container:   #ffdad6;
+  --color-on-error-container:#93000a;
+
+  /* ── MD3 Surface ── */
+  --color-surface:                    #f7f9fb;
+  --color-surface-dim:                #d8dadc;
+  --color-surface-bright:             #f7f9fb;
+  --color-surface-variant:            #e0e3e5;
+  --color-on-surface:                 #191c1e;
+  --color-on-surface-variant:         #45474b;
+  --color-inverse-surface:            #2d3133;
+  --color-inverse-on-surface:         #eff1f3;
+  --color-surface-tint:               #595f68;
+
+  --color-surface-container-lowest:   #ffffff;
+  --color-surface-container-low:      #f2f4f6;
+  --color-surface-container:          #eceef0;
+  --color-surface-container-high:     #e6e8ea;
+  --color-surface-container-highest:  #e0e3e5;
+
+  /* ── MD3 Background ── */
+  --color-background:    #f7f9fb;
+  --color-on-background: #191c1e;
+
+  /* ── MD3 Outline ── */
+  --color-outline:         #75777c;
+  --color-outline-variant: #c5c6cb;
+
+  /* ── Status ── */
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger:  #e11d48;
+
+  /* ── E-Ink ── */
+  --color-eink-case:   #222222;
+  --color-eink-screen: #f0f0f0;
 }
 
 /* ================================================================
-   Global Reset & Overrides
+   Global Reset
    ================================================================ */
 
-* {
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  /* Light Cybernetic Grid/Mesh Background */
-  background: radial-gradient(circle at 50% -20%, #f1f5f9 0%, #e2e8f0 100%) !important;
+  background-color: #f7f9fb;
 }
 
 body {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
-  color: var(--color-ink-500);
+  color: #191c1e;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Light glassmorphic card */
-.cyber-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 
-    0 8px 32px 0 rgba(0, 0, 0, 0.04), 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
-  transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* ================================================================
+   Bento Card System
+   ================================================================ */
+
+.bento-card {
+  background-color: #ffffff;
+  border: 1px solid #e0e3e5;
+  border-radius: 4px;
+  padding: 24px;
 }
 
-.cyber-card:hover {
-  border-color: rgba(2, 132, 199, 0.25);
-  box-shadow: 
-    0 12px 40px 0 rgba(2, 132, 199, 0.06), 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+.bento-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e3e5;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
 }
 
-/* Inputs & Textareas */
-input, textarea, select {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  color: var(--color-ink-700) !important;
-  transition: all 0.2s ease;
-}
-
-input:focus, textarea:focus, select:focus {
-  border-color: rgba(2, 132, 199, 0.4) !important;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12) !important;
-  background: #ffffff !important;
-  outline: none;
-}
-
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(2, 132, 199, 0.4);
-}
-
-/* Selection Color */
-::selection {
-  background: rgba(2, 132, 199, 0.1);
-  color: var(--color-ink-700);
+.bento-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #45474b;
 }
 
 /* ================================================================
-   Animations & Retro CRT Simulator
+   Material Symbols
    ================================================================ */
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.04); }
-}
-.breath-glow {
-  animation: pulse-glow 3s infinite ease-in-out;
-}
-
-/* RPG Scroll aesthetics */
-.rpg-scroll {
-  background: linear-gradient(135deg, #181410 0%, #0d0c0a 100%);
-  border: 1px solid #c29d6d;
-  box-shadow: inset 0 0 20px rgba(194, 157, 109, 0.15), 0 4px 12px rgba(0,0,0,0.5);
-  color: #ebd7bd;
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
 }
 
-/* Hazard pattern divider */
-.hazard-line {
-  height: 6px;
-  background: repeating-linear-gradient(
-    -45deg,
-    #d97706,
-    #d97706 8px,
-    #eeeff2 8px,
-    #eeeff2 16px
-  );
-  opacity: 0.85;
+/* ================================================================
+   Input / Textarea
+   ================================================================ */
+
+input, textarea, select {
+  font-family: var(--font-sans);
+  color: #191c1e;
 }
 
-.hazard-badge {
-  background: #d97706;
-  color: #eeeff2;
-  font-weight: 700;
-  text-shadow: none;
+textarea.input-minimal {
+  border: none;
+  border-bottom: 2px solid #e0e3e5;
+  transition: border-color 0.2s;
+  background: transparent;
+  outline: none;
+  resize: none;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+}
+
+textarea.input-minimal:focus {
+  border-bottom-color: #0058be;
+}
+
+/* ================================================================
+   Scrollbars
+   ================================================================ */
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c5c6cb; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #0058be; }
+
+::selection { background: rgba(0, 88, 190, 0.12); color: #191c1e; }
+
+/* ================================================================
+   E-Ink Screen Frame
+   ================================================================ */
+
+.e-ink-screen {
+  background-color: #f0f0f0;
+  border: 12px solid #222;
+  border-radius: 8px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
 }

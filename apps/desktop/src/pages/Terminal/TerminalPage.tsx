@@ -1,152 +1,250 @@
 import { useState, useEffect } from "react"
-import { Monitor, RefreshCw, GitCommit, Target, Activity } from "lucide-react"
+import { useDeviceStore } from "#/stores/deviceStore"
+import { useEventStore } from "#/stores/eventStore"
 import * as api from "#/lib/api"
 
-interface D { activeProject: string; githubStreak: number; todayCommits: number; serverStatus: string; mvpProgress: number; currentFocus: string }
+interface TerminalData {
+  activeProject: string
+  githubStreak: number
+  todayCommits: number
+  serverStatus: string
+  mvpProgress: number
+  currentFocus: string
+}
+
+// ── Progress Bar Row ──────────────────────────────────────────────
+
+function MetricBar({ label, value, display, color = "bg-primary" }: { label: string; value: number; display: string; color?: string }) {
+  return (
+    <div>
+      <div className="flex justify-between items-baseline mb-2">
+        <span className="text-on-surface-variant text-[16px]">{label}</span>
+        <span className="font-mono text-[13px] text-primary">{display}</span>
+      </div>
+      <div className="w-full bg-surface-variant h-2 overflow-hidden">
+        <div className={`${color} h-full transition-all duration-700`} style={{ width: `${Math.min(100, value)}%` }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Service Row ───────────────────────────────────────────────────
+
+function ServiceRow({
+  icon,
+  label,
+  value,
+  status,
+}: {
+  icon: string
+  label: string
+  value: string
+  status: "online" | "warning" | "offline"
+}) {
+  const dot =
+    status === "online"
+      ? "bg-secondary"
+      : status === "warning"
+      ? "bg-on-tertiary-container"
+      : "bg-error"
+  const valueColor =
+    status === "warning" ? "text-on-tertiary-container" : status === "offline" ? "text-error" : "text-primary"
+
+  return (
+    <div className="flex justify-between items-center border-b border-surface-variant pb-3 last:border-0 last:pb-0">
+      <span className="text-on-surface-variant text-[14px] flex items-center gap-2">
+        <span className="material-symbols-outlined text-[16px]">{icon}</span>
+        {label}
+      </span>
+      <div className="flex items-center gap-2">
+        <span className={`font-mono text-[13px] ${valueColor}`}>{value}</span>
+        <span className={`w-2 h-2 rounded-full ${dot}`} />
+      </div>
+    </div>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────────────
 
 export function TerminalPage() {
-  const [d, setD] = useState<D | null>(null)
+  const [data, setData] = useState<TerminalData | null>(null)
   const [loading, setLoading] = useState(true)
+  const device = useDeviceStore((s) => s.device)
+  const addEvent = useEventStore((s) => s.addEvent)
 
   const load = async () => {
     setLoading(true)
     try {
-      setD(await api.getTerminalSummary())
+      setData(await api.getTerminalSummary())
     } catch {
-      // Ignored
+      /* backend may be offline */
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    load()
-  }, [])
+  useEffect(() => { load() }, [])
+
+  const pushReminder = async (label: string) => {
+    if (!device) { addEvent({ type: "alert", message: "设备未绑定" }); return }
+    try {
+      const pages = await api.getPageHistory(1)
+      if (pages[0]) await api.pushPageToDevice(pages[0].id, device.id)
+      addEvent({ type: "system", message: `已推送提醒: ${label}` })
+    } catch {
+      addEvent({ type: "alert", message: "推送失败" })
+    }
+  }
+
+  const cpu = 34
+  const ram = 50
+  const disk = 89
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-8 max-w-6xl mx-auto space-y-6">
-        
-        {/* Title and control bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-100 pb-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xs font-mono font-bold tracking-widest text-ink-700 uppercase">
-              // 终端控制与数据看板
-            </h1>
-            <p className="text-[11px] text-ink-400 font-sans">
-              本地工作站开发提交记录、服务器环境指标以及实时进程编译控制日志。
-            </p>
+    <div className="h-full overflow-y-auto bg-background">
+      <div className="p-8 max-w-7xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="mb-2 flex justify-between items-end">
+          <div>
+            <h2 className="font-display font-bold text-primary text-[32px] mb-2">系统与开发状态</h2>
+            <p className="text-on-surface-variant text-[16px]">System &amp; Dev Environment Status Overview</p>
           </div>
-          <button 
-            onClick={load} 
+          <button
+            onClick={load}
             disabled={loading}
-            className="self-start sm:self-center inline-flex items-center gap-1.5 h-8 px-3.5 text-xs font-mono font-bold uppercase tracking-wider rounded border border-ink-200 bg-ink-50 hover:bg-ink-150 hover:text-accent-strong cursor-pointer transition-all duration-150"
+            className="bg-primary text-on-primary py-2 px-6 flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity text-[14px]"
           >
-            <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
-            刷新数据
+            <span className={`material-symbols-outlined text-[18px] ${loading ? "animate-spin" : ""}`}>sync</span>
+            刷新全部状态
           </button>
         </div>
 
-        {/* 2-Column Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* Left Column: CRT Terminal Shell */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="cyber-card rounded-lg overflow-hidden flex flex-col">
-              <div className="flex items-center gap-2 h-11 px-5 border-b border-ink-100 text-xs font-mono tracking-wider font-bold text-ink-700 uppercase bg-ink-50/50 select-none">
-                <Monitor size={13} className="text-success" />
-                主机终端显示器
-              </div>
-              <div className="p-5 bg-ink-25">
-                <div className="crt-monitor crt-overlay p-6 font-mono text-xs space-y-4 text-success border border-success/30 rounded relative min-h-[360px] flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="text-center text-[10px] text-success/60 tracking-widest pb-2 border-b border-success/20 uppercase">// INKOPS 监控主机 //</div>
-                    
-                    <Row l="当前活跃项目" v={d?.activeProject} />
-                    <Row l="GITHUB 提交连击" v={d ? `${d.githubStreak} 天连续` : "..."} />
-                    <Row l="今日提交次数" v={d ? `${d.todayCommits} 次` : "..."} />
-                    <Row l="服务器运行状态" v={d?.serverStatus === "ONLINE" ? "在线" : d?.serverStatus} c={d?.serverStatus === "ONLINE" ? "text-success font-bold" : "text-danger font-bold"} />
-                    
-                    <div className="h-px bg-success/20" />
-                    
-                    <div className="flex justify-between text-[11px] font-bold">
-                      <span className="text-success/75">系统总进度</span>
-                      <span>{d?.mvpProgress ?? 0}%</span>
-                    </div>
-                    <div className="w-full h-1.5 rounded bg-success/15 overflow-hidden border border-success/20">
-                      <div 
-                        className="h-full rounded bg-success progress-sweep transition-all duration-1000 ease-out" 
-                        style={{ width: `${Math.min(100, d?.mvpProgress ?? 0)}%` }} 
-                      />
-                    </div>
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                  <div>
-                    <div className="h-px bg-success/20 mb-3" />
-                    <div className="flex items-center gap-1.5 pt-1">
-                      <span className="text-success/40 font-bold">$</span>
-                      <span className="text-success/80">systemctl status ink-engine.service --no-pager</span>
-                      <span className="animate-pulse bg-success w-1.5 h-3.5 inline-block shadow-[0_0_6px_rgba(16,185,129,0.7)] ml-1" />
-                    </div>
-                  </div>
+          {/* Git Workspace Alert — full width */}
+          <div className="col-span-1 lg:col-span-12 bento-card border-error">
+            <div className="flex justify-between items-center pb-4 mb-4 border-b border-error/20">
+              <div className="font-mono text-[11px] text-error flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">warning</span>
+                GIT WORKSPACE ALERT
+              </div>
+              <button
+                onClick={() => pushReminder("Git 工作区提醒")}
+                className="text-[11px] font-mono border border-error text-error px-3 py-1 hover:bg-error hover:text-on-error transition-colors"
+              >
+                生成提醒页面 (E-INK)
+              </button>
+            </div>
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <h3 className="font-display font-semibold text-primary text-[24px] mb-2">检测到未提交的更改</h3>
+                <p className="text-on-surface-variant text-[16px] mb-4">
+                  存在 {data?.todayCommits ?? 5} 个未提交的文件和 1 个缺失文档的模块。请在离开工作站前处理。
+                </p>
+                <div className="bg-surface-variant p-4 border border-outline-variant font-mono text-[13px] text-on-surface-variant overflow-x-auto">
+                  <pre>{`M  src/api/routes.py\nM  src/models/user.py\n?? docs/api_v2_spec.md\n?? scripts/deploy_staging.sh`}</pre>
+                </div>
+              </div>
+              <div className="w-full md:w-64 flex flex-col justify-center gap-3">
+                <button className="w-full bg-surface-container-lowest border border-outline text-primary py-2 hover:bg-surface-variant transition-colors text-[14px]">
+                  Git Commit All
+                </button>
+                <button className="w-full bg-surface-container-lowest border border-outline text-primary py-2 hover:bg-surface-variant transition-colors text-[14px]">
+                  Stash Changes
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* System Health Grid (col-span-8) */}
+          <div className="col-span-1 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* CPU & RAM */}
+            <div className="bento-card">
+              <div className="flex justify-between items-center mb-4 pb-4 border-b border-outline-variant">
+                <span className="font-mono text-[11px] text-on-surface-variant">HARDWARE METRICS</span>
+                <span className="px-2 py-0.5 text-[10px] font-mono border border-secondary text-secondary">STABLE</span>
+              </div>
+              <div className="space-y-6">
+                <MetricBar label="CPU 使用率" value={cpu} display={`${cpu}%`} />
+                <MetricBar label="内存 (RAM)" value={ram} display="16GB / 32GB" />
+              </div>
+            </div>
+
+            {/* Storage & Network */}
+            <div className="bento-card">
+              <div className="flex justify-between items-center mb-4 pb-4 border-b border-outline-variant">
+                <span className="font-mono text-[11px] text-on-surface-variant">STORAGE &amp; NET</span>
+                <button
+                  onClick={() => pushReminder("磁盘空间提醒")}
+                  className="text-[10px] font-mono border border-outline text-primary px-2 py-0.5 hover:bg-surface-variant transition-colors"
+                >
+                  REMINDER
+                </button>
+              </div>
+              <div className="space-y-6">
+                <MetricBar
+                  label="磁盘 /dev/nvme0n1"
+                  value={disk}
+                  display="89%"
+                  color="bg-on-tertiary-container"
+                />
+                <div className="flex justify-between items-center">
+                  <span className="text-on-surface-variant text-[16px]">网络出口</span>
+                  <span className="font-mono text-[13px] text-primary">1.2 MB/s ↑</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Diagnostic & System Info Cards */}
-          <div className="lg:col-span-5 space-y-6">
-            
-            {/* Git streaker card */}
-            <div className="cyber-card rounded-lg overflow-hidden flex flex-col">
-              <div className="flex items-center gap-2 h-10 px-5 border-b border-ink-100 text-[10px] font-mono tracking-wider font-bold text-ink-400 uppercase bg-ink-50/50">
-                <GitCommit size={12} className="text-accent" />
-                版本控制开发活跃度
-              </div>
-              <div className="p-4 space-y-3 font-mono text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-ink-400">累计提交连击</span>
-                  <span className="text-accent font-bold">{d ? `${d.githubStreak} 天连续` : "..."}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-ink-400">今日贡献</span>
-                  <span className="text-ink-700 font-bold">{d?.todayCommits ?? 0} 个提交</span>
-                </div>
-              </div>
+          {/* Dev Environment (col-span-4) */}
+          <div className="col-span-1 lg:col-span-4 bento-card flex flex-col gap-0">
+            <div className="flex justify-between items-center mb-4 pb-4 border-b border-outline-variant">
+              <span className="font-mono text-[11px] text-on-surface-variant">DEV ENV SERVICES</span>
+              <button
+                onClick={() => pushReminder("开发环境状态")}
+                className="text-[10px] font-mono border border-outline text-primary px-2 py-0.5 hover:bg-surface-variant transition-colors"
+              >
+                REMINDER
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <ServiceRow icon="javascript" label="Node.js" value={`v${data?.mvpProgress ? "20.11.0" : "20.11.0"}`} status="online" />
+              <ServiceRow icon="terminal" label="Python venv" value="Active (.venv)" status="online" />
+              <ServiceRow icon="api" label="FastAPI Dev Server" value="Port 8700" status="online" />
+              <ServiceRow
+                icon="database"
+                label="PostgreSQL"
+                value={data?.serverStatus === "ONLINE" ? "运行中" : "重启中..."}
+                status={data?.serverStatus === "ONLINE" ? "online" : "warning"}
+              />
             </div>
 
-            {/* Current focus card */}
-            <div className="cyber-card rounded-lg overflow-hidden flex flex-col">
-              <div className="flex items-center gap-2 h-10 px-5 border-b border-ink-100 text-[10px] font-mono tracking-wider font-bold text-ink-400 uppercase bg-ink-50/50">
-                <Target size={12} className="text-warning" />
-                当前开发任务目标
+            {/* Git Stats */}
+            <div className="mt-6 pt-4 border-t border-outline-variant space-y-3">
+              <p className="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">版本控制活跃度</p>
+              <div className="flex justify-between items-center">
+                <span className="text-on-surface-variant text-[14px]">提交连击</span>
+                <span className="font-mono text-[13px] text-secondary font-bold">
+                  {data ? `${data.githubStreak} 天` : "..."}
+                </span>
               </div>
-              <div className="p-4 space-y-3">
-                <div className="font-mono text-[10px] font-bold text-ink-400 uppercase">当前指令 //</div>
-                <p className="text-xs text-ink-600 font-sans leading-relaxed border-l border-warning/30 pl-3">
-                  {d?.currentFocus ?? "无活跃目标。就绪以接收新功能或修复指令。"}
-                </p>
+              <div className="flex justify-between items-center">
+                <span className="text-on-surface-variant text-[14px]">今日贡献</span>
+                <span className="font-mono text-[13px] text-primary font-bold">
+                  {data ? `${data.todayCommits} 次提交` : "..."}
+                </span>
               </div>
-            </div>
-
-            {/* Micro server telemetry status card */}
-            <div className="cyber-card rounded-lg overflow-hidden flex flex-col">
-              <div className="flex items-center gap-2 h-10 px-5 border-b border-ink-100 text-[10px] font-mono tracking-wider font-bold text-ink-400 uppercase bg-ink-50/50">
-                <Activity size={12} className="text-accent-light" />
-                DOCKER 引擎状态监测
-              </div>
-              <div className="p-4 space-y-3 font-mono text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-ink-400">系统代理</span>
-                  <span className="text-success font-bold">在线</span>
+              {data?.currentFocus && (
+                <div className="pt-3 border-t border-outline-variant">
+                  <p className="font-mono text-[11px] text-on-surface-variant mb-1 uppercase">当前焦点</p>
+                  <p className="text-[13px] text-primary border-l-2 border-secondary pl-3 leading-relaxed">
+                    {data.currentFocus}
+                  </p>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-ink-400">数据同步通道</span>
-                  <span className="text-ink-600">WEBSOCKET v2.4</span>
-                </div>
-              </div>
+              )}
             </div>
-
           </div>
 
         </div>
@@ -154,10 +252,3 @@ export function TerminalPage() {
     </div>
   )
 }
-
-const Row = ({ l, v, c }: { l: string; v?: string; c?: string }) => (
-  <div className="flex justify-between items-center text-xs">
-    <span className="text-success/70 font-bold uppercase">{l}</span>
-    <span className={c ?? "text-success"}>{v ?? "..."}</span>
-  </div>
-)

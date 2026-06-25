@@ -23,8 +23,8 @@
 #include "EPD_4in2.h"
 
 // ========== Config ==========
-const char* DEFAULT_SSID     = "sxc";
-const char* DEFAULT_PASSWORD = "999lxjaini";
+const char* DEFAULT_SSID     = "ZKXT";
+const char* DEFAULT_PASSWORD = "zkxt7858";
 
 // EEPROM layout
 #define EEPROM_SIZE      512
@@ -84,9 +84,9 @@ bool loadConfig() {
   }
 
   char buf[32] = {0};
-  EEPROM.get(EEPROM_SSID, buf);      strncpy(wifiSSID, buf, 31);
-  EEPROM.get(EEPROM_PASS, buf);      strncpy(wifiPass, buf, 31);
-  EEPROM.get(EEPROM_DEV_NAME, buf);  strncpy(deviceName, buf, 15);
+  EEPROM.get(EEPROM_SSID, buf);     strncpy(wifiSSID,   buf, 31); wifiSSID[31]   = '\0';
+  EEPROM.get(EEPROM_PASS, buf);     strncpy(wifiPass,   buf, 31); wifiPass[31]   = '\0';
+  EEPROM.get(EEPROM_DEV_NAME, buf); strncpy(deviceName, buf, 15); deviceName[15] = '\0';
   EEPROM.end();
 
   Serial.printf("[EEPROM] Loaded: SSID=%s, device=%s\n", wifiSSID, deviceName);
@@ -244,17 +244,17 @@ void handleConfig() {
 
   bool changed = false;
   if (extract("ssid", newSSID)) {
-    strncpy(wifiSSID, newSSID.c_str(), 31);
+    strncpy(wifiSSID, newSSID.c_str(), 31); wifiSSID[31] = '\0';
     changed = true;
     Serial.printf("[Config] SSID updated: %s\n", wifiSSID);
   }
   if (extract("password", newPass)) {
-    strncpy(wifiPass, newPass.c_str(), 31);
+    strncpy(wifiPass, newPass.c_str(), 31); wifiPass[31] = '\0';
     changed = true;
     Serial.println("[Config] Password updated.");
   }
   if (extract("name", newName)) {
-    strncpy(deviceName, newName.c_str(), 15);
+    strncpy(deviceName, newName.c_str(), 15); deviceName[15] = '\0';
     changed = true;
     Serial.printf("[Config] Device name updated: %s\n", deviceName);
   }

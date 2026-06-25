@@ -1,246 +1,300 @@
 import { useState, useEffect } from "react"
-import { Archive, RefreshCw, Send, FileText } from "lucide-react"
 import { useEventStore } from "#/stores/eventStore"
 import { useDeviceStore } from "#/stores/deviceStore"
 import * as api from "#/lib/api"
-import type { Page } from "#/lib/types"
+import type { Page, TimelineEvent } from "#/lib/types"
 
-const templateLabel: Record<string, string> = {
-  QUEST_SCROLL: "任务卷轴", TERMINAL_STATUS: "数据看板", LAUNCH_PANEL: "发射台",
-  SYSTEM_ALERT: "系统告警", POSTCARD: "明信片", RELEASE_NEWS: "战报",
+// ── Helpers ───────────────────────────────────────────────────────
+
+function fmtTime(iso?: string | null) {
+  if (!iso) return "--:--:--"
+  const d = new Date(iso)
+  return d.toTimeString().slice(0, 8)
 }
 
-export function StudioPage() {
-  const [pages, setPages] = useState<Page[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedPage, setSelectedPage] = useState<Page | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
-  
-  const addEvent = useEventStore((s) => s.addEvent)
-  const isOnline = useDeviceStore((s) => s.isOnline)
-  const device = useDeviceStore((s) => s.device)
+const EVENT_TYPE_CONFIG: Record<string, { tag: string; icon: string; color: string; tagColor: string }> = {
+  commit: { tag: "GIT",   icon: "code",         color: "text-primary",    tagColor: "text-on-surface-variant border-outline-variant" },
+  quest:  { tag: "AI",    icon: "auto_awesome",  color: "text-secondary",  tagColor: "text-secondary border-secondary" },
+  alert:  { tag: "ERROR", icon: "error",         color: "text-error",      tagColor: "text-error border-error" },
+  launch: { tag: "TASK",  icon: "assignment",    color: "text-primary",    tagColor: "text-on-surface-variant border-outline-variant" },
+  message:{ tag: "MSG",   icon: "forum",         color: "text-primary",    tagColor: "text-on-surface-variant border-outline-variant" },
+  system: { tag: "SYS",   icon: "terminal",      color: "text-outline",    tagColor: "text-outline border-outline-variant" },
+}
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const p = await api.getPageHistory(50)
-      setPages(p)
-      if (p.length > 0 && !selectedPage) {
-        setSelectedPage(p[0])
-      }
-    } catch {
-      // Ignored
-    } finally {
-      setLoading(false)
-    }
-  }
+// ── Activity Bar Chart ────────────────────────────────────────────
+
+const HOUR_BARS = [
+  { label: "08", pct: 30, type: "normal" },
+  { label: "09", pct: 80, type: "normal" },
+  { label: "10", pct: 100, type: "error" },
+  { label: "11", pct: 50, type: "normal" },
+  { label: "14", pct: 90, type: "ai" },
+  { label: "16", pct: 40, type: "normal" },
+]
+
+function ActivityChart({ events }: { events: TimelineEvent[] }) {
+  const total = events.length
+  const errors = events.filter((e) => e.type === "alert").length
+  const aiEvents = events.filter((e) => e.type === "quest").length
+  const aiPct = total > 0 ? Math.round((aiEvents / total) * 100) : 0
+
+  return (
+    <section className="bento-card">
+      <div className="bento-header">
+        <span className="bento-label">活动密度</span>
+      </div>
+      <div className="flex items-end justify-between gap-1 h-20">
+        {HOUR_BARS.map((bar) => (
+          <div key={bar.label} className="flex-1 bg-surface-variant relative h-full">
+            <div
+              className={`absolute bottom-0 left-0 right-0 transition-all ${
+                bar.type === "error"
+                  ? "bg-error-container border-t border-error"
+                  : bar.type === "ai"
+                  ? "bg-secondary-fixed border-t border-secondary"
+                  : "bg-primary-fixed-dim"
+              }`}
+              style={{ height: `${bar.pct}%` }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between mt-2 font-mono text-[10px] text-on-surface-variant">
+        <span>08:00</span>
+        <span>16:00</span>
+      </div>
+      <div className="mt-3 space-y-2 pt-3 border-t border-outline-variant">
+        {[
+          { label: "总事件数", value: total, color: "text-primary" },
+          { label: "错误警告", value: errors, color: "text-error" },
+          { label: "AI 参与度", value: `${aiPct}%`, color: "text-secondary" },
+        ].map((row) => (
+          <div key={row.label} className="flex justify-between items-center pb-1.5 border-b border-outline-variant last:border-0">
+            <span className="text-[13px] text-on-surface-variant">{row.label}</span>
+            <span className={`font-mono text-[13px] font-bold ${row.color}`}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────────────
+
+export function StudioPage() {
+  const events = useEventStore((s) => s.events)
+  const device = useDeviceStore((s) => s.device)
+  const isOnline = useDeviceStore((s) => s.isOnline)
+  const [pages, setPages] = useState<Page[]>([])
+  const [filter, setFilter] = useState("")
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    load()
+    api.getPageHistory(30).then(setPages).catch(() => {})
   }, [])
-
-  const badge = (s: string) => {
-    const map: Record<string, string> = { 
-      pushed: "bg-success-light text-success border-success/35", 
-      ready: "bg-accent-glow text-accent-strong border-accent/35", 
-      draft: "bg-ink-100 text-ink-400 border-ink-200", 
-      failed: "bg-danger-light text-danger border-danger/35" 
-    }
-    return map[s] ?? "bg-ink-100 text-ink-450 border-ink-200"
-  }
-
-  const badgeText = (s: string) => {
-    const map: Record<string, string> = { 
-      pushed: "已推送", 
-      ready: "就绪", 
-      draft: "草稿", 
-      failed: "失败" 
-    }
-    return map[s] ?? s
-  }
-
-  const handleReRender = async (pageId: string) => {
-    setActionLoading(true)
-    try {
-      await api.reRenderPage(pageId)
-      addEvent({ type: "system", message: "重新渲染页面命令发送成功" })
-      await load()
-      // Refresh selected page reference
-      const updated = await api.getPageHistory(50)
-      const found = updated.find(x => x.id === pageId)
-      if (found) setSelectedPage(found)
-    } catch {
-      addEvent({ type: "alert", message: "重新渲染页面失败" })
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   const handlePush = async (pageId: string) => {
     if (!device) return
-    setActionLoading(true)
+    setActionLoading(pageId)
     try {
       await api.pushPageToDevice(pageId, device.id)
-      useDeviceStore.getState().setLastRefresh(new Date())
-      addEvent({ type: "system", message: `已推送页面帧至墨水屏设备` })
-      await load()
-      // Refresh selected page reference
-      const updated = await api.getPageHistory(50)
-      const found = updated.find(x => x.id === pageId)
-      if (found) setSelectedPage(found)
-    } catch {
-      addEvent({ type: "alert", message: "推送至墨水屏设备失败" })
-    } finally {
-      setActionLoading(false)
+    } catch { /* ignored */ } finally {
+      setActionLoading(null)
     }
   }
 
-  return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-8 max-w-6xl mx-auto space-y-6">
-        
-        {/* Title and control bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ink-100 pb-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xs font-mono font-bold tracking-widest text-ink-700 uppercase">
-              // 历史渲染归档
-            </h1>
-            <p className="text-[11px] text-ink-400 font-sans">
-              查看并审查过去所有的电子墨水屏渲染页面帧。支持历史帧的二次重绘与直接向屏幕的强行推送。
-            </p>
-          </div>
-          <button 
-            onClick={load} 
-            disabled={loading}
-            className="self-start sm:self-center inline-flex items-center gap-1.5 h-8 px-3.5 text-xs font-mono font-bold uppercase tracking-wider rounded border border-ink-200 bg-ink-50 hover:bg-ink-150 hover:text-accent-strong cursor-pointer transition-all duration-150"
-          >
-            <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
-            刷新归档
-          </button>
-        </div>
+  // Combine real events + page history as timeline items
+  const timelineEvents = [
+    ...events.map((e) => ({
+      id: e.id,
+      type: e.type,
+      message: e.message,
+      timestamp: e.timestamp,
+      pageId: null as string | null,
+    })),
+    ...pages.map((p) => ({
+      id: p.id,
+      type: "commit" as const,
+      message: `页面帧: ${p.templateId}`,
+      timestamp: p.createdAt,
+      pageId: p.id,
+    })),
+  ]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .filter((e) =>
+      !filter ||
+      e.message.toLowerCase().includes(filter.toLowerCase()) ||
+      e.type.includes(filter.toLowerCase())
+    )
 
-        {/* 2-Column Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* Left Column: Historical Arcs list (width 7/12) */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="cyber-card rounded-lg overflow-hidden flex flex-col">
-              <div className="flex items-center gap-2 h-11 px-5 border-b border-ink-100 text-xs font-mono tracking-wider font-bold text-ink-700 uppercase bg-ink-50/50 select-none">
-                <Archive size={13} className="text-purple" />
-                渲染快照时间轴 ({pages.length})
+  return (
+    <div className="h-full overflow-y-auto bg-background">
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="flex flex-col xl:flex-row gap-8">
+
+          {/* Left: Timeline (2/3) */}
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
+            {/* Header + Filter */}
+            <section className="bento-card">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h1 className="font-display font-bold text-primary text-xl">时间线</h1>
+                  <p className="text-[13px] text-on-surface-variant mt-0.5">
+                    {new Date().toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" })} — 系统运行历史
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-56">
+                    <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-outline" style={{ fontSize: 16 }}>search</span>
+                    <input
+                      className="w-full pl-8 pr-3 py-1.5 bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary font-mono text-[13px] text-primary outline-none transition-colors"
+                      placeholder="过滤事件类型..."
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                    />
+                  </div>
+                  <button className="p-1.5 border border-outline-variant text-on-surface-variant hover:bg-surface-variant transition-colors">
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>filter_list</span>
+                  </button>
+                </div>
               </div>
-              
-              <div className="p-4 space-y-2 overflow-y-auto max-h-[500px]">
-                {pages.length === 0 ? (
-                  <div className="flex flex-col items-center py-16 text-center">
-                    <div className="size-10 rounded-full bg-ink-50 flex items-center justify-center mb-3 border border-ink-100">
-                      <Archive size={18} className="text-ink-300" />
-                    </div>
-                    <h3 className="text-xs font-semibold text-ink-700 uppercase font-mono tracking-wider">归档库为空</h3>
-                    <p className="text-[11px] text-ink-400 mt-1">生成的 E-ink 页面快照将在归档数据库中自动保存。</p>
+            </section>
+
+            {/* Timeline Events */}
+            <section className="bento-card">
+              <p className="bento-label mb-4 pb-4 border-b border-outline-variant">事件流</p>
+              <div className="flex flex-col relative py-2">
+                {timelineEvents.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <span className="material-symbols-outlined text-outline" style={{ fontSize: 32 }}>timeline</span>
+                    <p className="font-mono text-[11px] text-outline mt-3 uppercase tracking-wider">暂无事件记录</p>
                   </div>
                 ) : (
-                  pages.map((p) => {
-                    const isSelected = selectedPage?.id === p.id
+                  timelineEvents.slice(0, 30).map((evt, i) => {
+                    const cfg = EVENT_TYPE_CONFIG[evt.type] ?? EVENT_TYPE_CONFIG.system
+                    const isLast = i === timelineEvents.slice(0, 30).length - 1
                     return (
-                      <div 
-                        key={p.id} 
-                        onClick={() => setSelectedPage(p)}
-                        className={`flex items-center justify-between px-4 py-3.5 rounded border transition-all duration-200 cursor-pointer
-                          ${isSelected 
-                            ? "bg-accent/5 border-accent/40 shadow-sm" 
-                            : "bg-ink-50 border-ink-100 hover:border-accent/25 hover:bg-ink-50/70"
+                      <div key={evt.id} className="flex gap-4 relative pb-6">
+                        {/* Connecting line */}
+                        {!isLast && (
+                          <div className="absolute left-5 top-10 bottom-0 w-px bg-outline-variant z-0" />
+                        )}
+                        {/* Icon */}
+                        <div
+                          className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 bg-surface z-10 ${
+                            evt.type === "alert"
+                              ? "border-error bg-error-container"
+                              : "border-outline-variant"
                           }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-xs font-mono font-bold text-ink-750 uppercase truncate">
-                              {templateLabel[p.templateId] ?? p.templateId}
+                        >
+                          <span
+                            className={`material-symbols-outlined ${cfg.color}`}
+                            style={{ fontSize: 18 }}
+                          >
+                            {cfg.icon}
+                          </span>
+                        </div>
+                        {/* Content */}
+                        <div className="flex-1 pt-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1 gap-2">
+                            <span className={`font-mono text-[11px] ${evt.type === "alert" ? "text-error" : "text-on-surface-variant"}`}>
+                              {fmtTime(evt.timestamp)}
                             </span>
-                            <span className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase rounded border ${badge(p.status)}`}>
-                              {badgeText(p.status)}
+                            <span className={`font-mono text-[10px] px-2 py-0.5 border ${cfg.tagColor}`}>
+                              {cfg.tag}
                             </span>
                           </div>
-                          <div className="text-[10px] font-mono text-ink-400 truncate mt-1">
-                            {p.reason ? `${p.reason} · ` : ""}{p.createdAt?.slice(0, 16).replace("T", " ") ?? ""}
+                          <div className="flex items-start justify-between gap-2">
+                            <p className={`text-[14px] font-medium ${evt.type === "alert" ? "text-error" : "text-primary"} leading-snug`}>
+                              {evt.message}
+                            </p>
+                            {evt.pageId && isOnline && (
+                              <button
+                                onClick={() => handlePush(evt.pageId!)}
+                                disabled={actionLoading === evt.pageId}
+                                className="shrink-0 bg-secondary-container text-on-secondary-container text-[10px] font-mono px-2 py-1 rounded flex items-center gap-1 hover:opacity-90 disabled:opacity-50"
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>send_to_mobile</span>
+                                推送到屏幕
+                              </button>
+                            )}
                           </div>
+                          {evt.type === "commit" && (
+                            <div className="font-mono text-[12px] text-on-surface-variant bg-surface-container-low p-2 border border-outline-variant mt-2">
+                              <span className="text-secondary">feat:</span> {evt.message}
+                            </div>
+                          )}
+                          {evt.type === "alert" && (
+                            <div className="font-mono text-[12px] text-on-surface-variant bg-surface-container-low p-2 border border-error-container mt-2">
+                              [WARN] 检测到异常事件，请检查系统状态
+                            </div>
+                          )}
+                          {evt.type === "message" && (
+                            <div className="font-sans text-[13px] text-on-surface-variant bg-surface p-2 border border-outline-variant mt-2 italic">
+                              "{evt.message}"
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
                   })
                 )}
               </div>
-            </div>
+            </section>
           </div>
 
-          {/* Right Column: Historical Inspector (width 5/12) */}
-          <div className="lg:col-span-5 space-y-6">
-            {selectedPage ? (
-              <div className="cyber-card rounded-lg overflow-hidden flex flex-col">
-                <div className="flex items-center gap-2 h-11 px-5 border-b border-ink-100 text-xs font-mono tracking-wider font-bold text-ink-700 uppercase bg-ink-50/50 select-none">
-                  <FileText size={13} className="text-accent" />
-                  快照详细参数审查
-                </div>
-                
-                <div className="p-5 space-y-4 font-mono text-xs">
-                  <div className="space-y-3 p-4 rounded bg-ink-50 border border-ink-100">
-                    <div className="flex justify-between items-center pb-2 border-b border-ink-100/40">
-                      <span className="text-ink-400 font-bold">帧标识 (ID)</span>
-                      <span className="text-ink-700 select-all font-mono text-[10px] truncate max-w-[150px]">{selectedPage.id}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-2 border-b border-ink-100/40">
-                      <span className="text-ink-400 font-bold">模板类型</span>
-                      <span className="text-accent font-bold">{templateLabel[selectedPage.templateId] ?? selectedPage.templateId}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-2 border-b border-ink-100/40">
-                      <span className="text-ink-400 font-bold">状态状态</span>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase rounded border ${badge(selectedPage.status)}`}>
-                        {badgeText(selectedPage.status)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center pb-2 border-b border-ink-100/40">
-                      <span className="text-ink-400 font-bold">生成原因</span>
-                      <span className="text-ink-650 max-w-[160px] truncate text-right">{selectedPage.reason || "系统自检触发"}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-ink-400 font-bold">记录时间</span>
-                      <span className="text-ink-650">{selectedPage.createdAt?.slice(0, 19).replace("T", " ") ?? ""}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions inside inspector */}
-                  <div className="space-y-3 pt-2">
-                    <button 
-                      onClick={() => handleReRender(selectedPage.id)}
-                      disabled={actionLoading}
-                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider rounded cursor-pointer select-none bg-purple text-white hover:bg-purple-strong disabled:opacity-30 transition-all duration-150"
-                    >
-                      <RefreshCw size={12} className={actionLoading ? "animate-spin" : ""} />
-                      重新渲染此帧
-                    </button>
-                    
-                    <button 
-                      onClick={() => handlePush(selectedPage.id)}
-                      disabled={!isOnline || actionLoading}
-                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider rounded cursor-pointer select-none bg-accent text-white hover:bg-accent-strong disabled:opacity-30 transition-all duration-150"
-                    >
-                      <Send size={11} />
-                      强行推送至屏幕
-                    </button>
-                  </div>
-                </div>
+          {/* Right: Memory Summary + Activity (1/3) */}
+          <div className="xl:w-80 shrink-0 flex flex-col gap-6">
+            {/* Memory Summary */}
+            <section className="bento-card relative overflow-hidden sticky top-0">
+              <div
+                className="absolute inset-0 opacity-10 pointer-events-none"
+                style={{ background: "radial-gradient(circle at 100% 0%, #0058be 0%, transparent 50%)" }}
+              />
+              <div className="flex items-center gap-2 pb-4 mb-4 border-b border-outline-variant relative z-10">
+                <span className="material-symbols-outlined text-secondary" style={{ fontSize: 18 }}>memory</span>
+                <span className="bento-label">记忆摘要</span>
               </div>
-            ) : (
-              <div className="cyber-card rounded-lg overflow-hidden flex flex-col justify-center items-center p-8 text-center min-h-[300px] select-none">
-                <div className="size-11 rounded-full bg-purple/10 flex items-center justify-center border border-purple/20 mb-4 animate-pulse">
-                  <Archive size={18} className="text-purple" />
-                </div>
-                <h3 className="text-xs font-semibold text-ink-700 uppercase font-mono tracking-widest">请选择归档帧</h3>
-                <p className="text-[11px] text-ink-400 mt-1.5 max-w-xs leading-relaxed">
-                  在左侧时间轴中点击任一历史页面帧，即可在此处查看其运行参数详情、重新触发渲染，或直接推送到物理墨水屏设备。
+              <div className="relative z-10">
+                <h2 className="font-display font-bold text-primary text-xl mb-2">每日简报</h2>
+                <p className="text-[13px] text-on-surface-variant leading-relaxed mb-5">
+                  根据今日的事件日志，系统共记录{" "}
+                  <span className="font-medium text-primary">{events.length}</span> 条事件。
+                  AI 处理了所有计划中的内容。整体效率评级：
+                  <span className="font-medium text-primary ml-1">
+                    {events.filter((e) => e.type === "alert").length === 0 ? "A" : "B+"}
+                  </span>。
                 </p>
+                <div className="flex flex-col gap-2.5">
+                  {[
+                    { label: "总事件数", value: events.length, color: "text-primary" },
+                    { label: "错误警告", value: events.filter((e) => e.type === "alert").length, color: "text-error" },
+                    { label: "归档页面", value: pages.length, color: "text-secondary" },
+                  ].map((row) => (
+                    <div key={row.label} className="flex justify-between items-center pb-2 border-b border-outline-variant last:border-0">
+                      <span className="text-[13px] text-on-surface-variant">{row.label}</span>
+                      <span className={`font-mono text-[13px] font-bold ${row.color}`}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 space-y-2">
+                  <button className="w-full py-2 border border-outline-variant text-primary font-mono text-[11px] uppercase tracking-wider hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>download</span>
+                    导出报告
+                  </button>
+                  <button
+                    disabled={!isOnline}
+                    className="w-full py-2 bg-secondary-container text-on-secondary-container font-mono text-[11px] uppercase tracking-wider hover:opacity-90 disabled:opacity-40 transition-opacity flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>send_to_mobile</span>
+                    推送到屏幕
+                  </button>
+                </div>
               </div>
-            )}
+            </section>
+
+            {/* Activity Density */}
+            <ActivityChart events={events} />
           </div>
 
         </div>

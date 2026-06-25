@@ -1,113 +1,126 @@
 import { useAppStore } from "#/stores/appStore"
 import { useDeviceStore } from "#/stores/deviceStore"
-import type { ChannelDef, Channel } from "#/lib/types"
-import { LayoutDashboard, Sparkles, Rocket, Monitor, ShieldAlert, MessageSquare, Archive, Cpu, ChevronLeft, ChevronRight } from "lucide-react"
+import type { Channel } from "#/lib/types"
 import { motion } from "framer-motion"
 
-const items: (ChannelDef & { icon: typeof LayoutDashboard })[] = [
-  { id: "bridge",   label: "仪表盘",   shortcut: "1", icon: LayoutDashboard },
-  { id: "quest",    label: "AI 任务",  shortcut: "2", icon: Sparkles },
-  { id: "launch",   label: "项目进度", shortcut: "3", icon: Rocket },
-  { id: "terminal", label: "数据看板", shortcut: "4", icon: Monitor },
-  { id: "watcher",  label: "监控告警", shortcut: "5", icon: ShieldAlert },
-  { id: "signals",  label: "留言消息", shortcut: "6", icon: MessageSquare },
-  { id: "studio",   label: "历史归档", shortcut: "7", icon: Archive },
-  { id: "device",   label: "设备管理", shortcut: "8", icon: Cpu },
+type NavItem = {
+  id: Channel
+  label: string
+  icon: string
+}
+
+const mainItems: NavItem[] = [
+  { id: "bridge",   label: "仪表盘",   icon: "dashboard" },
+  { id: "studio",   label: "时间线",   icon: "timeline" },
+  { id: "quest",    label: "内容实验室", icon: "psychology" },
+  { id: "device",   label: "设备管理", icon: "settings_remote" },
+  { id: "watcher",  label: "归档",     icon: "archive" },
+]
+
+const footerItems: NavItem[] = [
+  { id: "launch",   label: "项目执行", icon: "rocket_launch" },
+  { id: "terminal", label: "系统状态", icon: "monitor_heart" },
+  { id: "signals",  label: "生活中心", icon: "self_improvement" },
 ]
 
 export function Sidebar() {
   const active = useAppStore((s) => s.activeChannel)
   const setActive = useAppStore((s) => s.setActiveChannel)
-  const isCollapsed = useAppStore((s) => s.isSidebarCollapsed)
-  const toggleCollapse = useAppStore((s) => s.toggleSidebar)
   const online = useDeviceStore((s) => s.isOnline)
 
   return (
-    <aside
-      className={`flex flex-col shrink-0 select-none bg-sidebar-bg border-r border-sidebar-border relative z-10 transition-[width] duration-200 ease-in-out ${
-        isCollapsed ? "w-14" : "w-55"
-      }`}
-    >
-      {/* Header */}
-      <div className={`flex items-center h-12 px-3 border-b border-sidebar-border shrink-0 ${isCollapsed ? "justify-center" : "justify-between"}`}>
-        {!isCollapsed ? (
-          <>
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="size-6 rounded-md flex items-center justify-center shrink-0 bg-gradient-to-br from-accent to-accent-light shadow-md shadow-accent/20">
-                <span className="text-[11px] font-bold text-white tracking-widest font-mono">IO</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold tracking-wider text-sidebar-text-active font-mono uppercase">InkOps</span>
-                <span className="text-[9px] font-mono tracking-widest text-sidebar-text/50 uppercase leading-none mt-0.5">控制台</span>
-              </div>
-            </div>
-            <button
-              onClick={toggleCollapse}
-              className="flex items-center justify-center size-6 rounded hover:bg-ink-100 hover:text-ink-700 text-ink-400 cursor-pointer transition-colors duration-150 shrink-0"
-              title="折叠侧边栏"
-            >
-              <ChevronLeft size={14} />
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={toggleCollapse}
-            className="flex items-center justify-center size-8 rounded border border-ink-150 bg-ink-50/20 hover:bg-ink-100 hover:text-ink-700 text-ink-400 cursor-pointer transition-colors duration-150 shrink-0"
-            title="展开侧边栏"
-          >
-            <ChevronRight size={15} />
-          </button>
-        )}
+    <aside className="flex flex-col p-4 h-full w-64 shrink-0 bg-surface-container-low border-r border-outline-variant">
+      {/* Brand / Device Header */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant overflow-hidden">
+          <div className="w-full h-full bg-primary flex items-center justify-center rounded-full">
+            <span className="text-on-primary text-xs font-bold font-mono tracking-widest">IO</span>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-display font-bold text-primary text-base leading-tight truncate">终端_01</h2>
+          <p className="text-[13px] text-on-surface-variant mt-0.5 flex items-center gap-1.5 leading-none">
+            <span
+              className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${online ? "bg-success" : "bg-outline"}`}
+            />
+            ESP32-S3 • {online ? "在线" : "离线"}
+          </p>
+        </div>
       </div>
 
-      {/* Navigation */}
-      <nav className={`flex-1 py-3 px-2 space-y-1 overflow-y-auto ${isCollapsed ? "px-1.5" : "px-2"}`}>
-        {items.map((it) => {
-          const sel = active === it.id
-          const Icon = it.icon
+      {/* CTA: 新建条目 */}
+      <button
+        onClick={() => setActive("quest")}
+        className="w-full bg-primary text-on-primary text-[14px] font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 mb-6 hover:opacity-90 active:scale-[0.99] transition-all duration-100"
+      >
+        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: 18 }}>add</span>
+        新建条目
+      </button>
+
+      {/* Main Navigation */}
+      <nav className="flex-1 space-y-1 overflow-y-auto">
+        {mainItems.map((item) => {
+          const sel = active === item.id
           return (
             <button
-              key={it.id}
-              onClick={() => setActive(it.id as Channel)}
-              title={isCollapsed ? it.label : undefined}
-              className={`w-full relative flex items-center group outline-none transition-colors duration-150 cursor-pointer h-9
-                ${isCollapsed ? "justify-center px-0 rounded-md" : "gap-2.5 px-3 rounded-md text-left"}
-                ${sel ? "font-semibold text-sidebar-text-active" : "text-sidebar-text hover:text-sidebar-text-active"}`}
+              key={item.id}
+              onClick={() => setActive(item.id as Channel)}
+              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors duration-100 outline-none ${
+                sel
+                  ? "text-on-secondary-container font-semibold"
+                  : "text-on-surface-variant hover:bg-surface-container-highest"
+              }`}
             >
               {sel && (
                 <motion.span
-                  layoutId="active-nav"
-                  className="absolute inset-0 bg-sidebar-active border-l-2 border-accent rounded-md"
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  layoutId="active-sidebar"
+                  className="absolute inset-0 bg-secondary-container rounded-lg"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
                 />
               )}
-              <Icon size={15} className={`shrink-0 z-10 transition-transform duration-200 group-hover:scale-105 ${sel ? "text-accent-strong" : "opacity-50 group-hover:opacity-100"}`} />
-              {!isCollapsed && <span className="flex-1 truncate z-10 text-[13px]">{it.label}</span>}
-              {!isCollapsed && (
-                <kbd className={`text-[9px] font-mono border border-sidebar-border px-1 py-0.5 rounded-sm shrink-0 z-10 transition-opacity duration-200 ${sel ? "opacity-75" : "opacity-35 group-hover:opacity-60"}`}>
-                  ⌃{it.shortcut}
-                </kbd>
-              )}
+              <span
+                className={`material-symbols-outlined relative z-10 ${sel ? "text-secondary" : ""}`}
+                style={{ fontSize: 20 }}
+              >
+                {item.icon}
+              </span>
+              <span className="text-[14px] relative z-10">{item.label}</span>
             </button>
           )
         })}
       </nav>
 
-      {/* Footer Status */}
-      <div className={`py-3 border-t border-sidebar-border text-[10px] text-sidebar-text shrink-0 bg-sidebar-bg/50 ${isCollapsed ? "px-0 flex justify-center" : "px-4"}`}>
-        <div className="flex items-center gap-2.5">
-          <span className="relative flex size-2 shrink-0">
-            {online && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-            )}
-            <span className={`relative inline-flex rounded-full size-2 ${online ? "bg-success shadow-sm shadow-success/40" : "bg-ink-300"}`} />
-          </span>
-          {!isCollapsed && (
-            <span className="font-mono tracking-wider text-[10px] truncate">
-              {online ? "节点 NODE-01 // 已连接" : "节点 NODE-01 // 离线"}
-            </span>
-          )}
-        </div>
+      {/* Footer Navigation */}
+      <div className="mt-4 border-t border-outline-variant pt-4 space-y-1">
+        {footerItems.map((item) => {
+          const sel = active === item.id
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActive(item.id as Channel)}
+              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors duration-100 outline-none ${
+                sel
+                  ? "text-on-secondary-container font-semibold"
+                  : "text-on-surface-variant hover:bg-surface-container-highest"
+              }`}
+            >
+              {sel && (
+                <motion.span
+                  layoutId="active-sidebar-footer"
+                  className="absolute inset-0 bg-secondary-container rounded-lg"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+              )}
+              <span
+                className={`material-symbols-outlined relative z-10 ${sel ? "text-secondary" : ""}`}
+                style={{ fontSize: 20 }}
+              >
+                {item.icon}
+              </span>
+              <span className="text-[14px] relative z-10">{item.label}</span>
+            </button>
+          )
+        })}
       </div>
     </aside>
   )

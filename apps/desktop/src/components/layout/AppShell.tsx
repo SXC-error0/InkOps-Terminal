@@ -1,7 +1,9 @@
 import { useAppStore } from "#/stores/appStore"
 import { Sidebar } from "./Sidebar"
+import { TopBar } from "./TopBar"
 import { StatusBar } from "./StatusBar"
 import { DevicePanel } from "./DevicePanel"
+import { ToastContainer } from "#/components/ui/Toast"
 import { BridgePage } from "#/pages/Bridge/BridgePage"
 import { QuestPage } from "#/pages/Quest/QuestPage"
 import { LaunchPage } from "#/pages/Launch/LaunchPage"
@@ -13,18 +15,28 @@ import { DevicePage } from "#/pages/Device/DevicePage"
 
 import { motion, AnimatePresence } from "framer-motion"
 
-const pages = { bridge: BridgePage, quest: QuestPage, launch: LaunchPage, terminal: TerminalPage, watcher: WatcherPage, signals: SignalsPage, studio: StudioPage, device: DevicePage }
+const pages = {
+  bridge: BridgePage,
+  quest: QuestPage,
+  launch: LaunchPage,
+  terminal: TerminalPage,
+  watcher: WatcherPage,
+  signals: SignalsPage,
+  studio: StudioPage,
+  device: DevicePage,
+}
 
 export function AppShell() {
   const ch = useAppStore((s) => s.activeChannel)
   const isPreviewPanelOpen = useAppStore((s) => s.isPreviewPanelOpen)
   const Page = pages[ch]
-  
+
   return (
-    <div className="flex h-full w-full bg-ink-25 text-ink-500 overflow-hidden">
+    <div className="flex h-full w-full bg-background text-on-surface overflow-hidden">
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
         <StatusBar />
+        <TopBar />
         <div className="flex flex-1 min-w-0 overflow-hidden relative">
           <main className="flex-1 overflow-hidden relative">
             <AnimatePresence mode="wait">
@@ -40,7 +52,7 @@ export function AppShell() {
               </motion.div>
             </AnimatePresence>
           </main>
-          
+
           <AnimatePresence>
             {isPreviewPanelOpen && (
               <motion.div
@@ -56,7 +68,7 @@ export function AppShell() {
           </AnimatePresence>
         </div>
       </div>
+      <ToastContainer />
     </div>
   )
 }
-

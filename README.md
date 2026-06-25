@@ -1,7 +1,7 @@
 # InkOps Terminal
 
 > **AI-Powered E-Ink Mission Control for Indie Makers**
-> 一台由 AI 驱动、通过电子墨水屏展示关键信息的独立开发者桌面作战终端。
+> 一台由 AI 驱动、通过电子墨水屏展示关键信息的独立开发者桌面终端。
 
 <p align="center">
   <strong>任务变成副本 · 提交变成战绩 · 异常变成警报 · 留言变成纸面信号 · 发布变成头版</strong>

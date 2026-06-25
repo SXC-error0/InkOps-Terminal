@@ -7,12 +7,8 @@
 #include "html.h"       // HTML page of the tool
 #include "epd.h"        // e-Paper driver
 
-//const char* ssid = "Waveshare";
-//const char* password = "password";
-//const char* ssid = "TheHome";
-//const char* password = "qq330447168";
-const char *ssid = "JSBPI"; //"your ssid";
-const char *password = "waveshare0755";   //"your password";
+const char *ssid     = "ZKXT";
+const char *password = "zkxt7858";
 ESP8266WebServer server(80);
 IPAddress myIP;       // IP address in your local wifi net
 
@@ -22,19 +18,9 @@ void setup(void) {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
-  //Static IP setting---by Lin
-  wifi_station_dhcpc_stop();
-  struct ip_info info;
-  IP4_ADDR(&info.ip, 192, 168, 10, 211);
-  IP4_ADDR(&info.gw, 192, 168, 10, 1);
-  IP4_ADDR(&info.netmask, 255, 255, 255, 0);
-  wifi_set_ip_info(STATION_IF, &info);
-
-
-  // Connect to WiFi network
+  // Connect to WiFi network (DHCP)
   Serial.println("");
-  Serial.println("");
-  Serial.print("Connected to ");
+  Serial.print("Connecting to ");
   Serial.println(ssid);
 
   // SPI initialization
